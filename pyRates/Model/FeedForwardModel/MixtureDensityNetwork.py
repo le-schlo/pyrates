@@ -1,23 +1,56 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
+import torch.nn as nn
+import torch.nn.functional as F
+
+
 class MDN(nn.Module):
 
-    def __init__(self, input_dim, output_dim, n_components=3, dropout=0.1, hidden_dims=[256, 128], epsilon=1e-6):
+    def __init__(self,
+                 input_dim,
+                 output_dim,
+                 n_components=3,
+                 hidden_dims=[256, 128],
+                 dropout=0.1,
+                 activation='relu',
+                 use_batch_norm=True,
+                 epsilon=1e-6):
         super().__init__()
         self.output_dim = output_dim
         self.n_components = n_components
         self.epsilon = epsilon
 
+        # Choose activation function
+        if activation == 'relu':
+            self.activation = nn.ReLU()
+        elif activation == 'elu':
+            self.activation = nn.ELU()
+        elif activation == 'leaky_relu':
+            self.activation = nn.LeakyReLU()
+        elif activation == 'gelu':
+            self.activation = nn.GELU()
+        else:
+            raise ValueError(f"Unknown activation: {activation}")
+
+        # Build hidden layers dynamically
         layers = []
         prev_dim = input_dim
+
         for hidden_dim in hidden_dims:
             layers.append(nn.Linear(prev_dim, hidden_dim))
-            layers.append(nn.ReLU())
-            layers.append(nn.Dropout(dropout))
+
+            if use_batch_norm:
+                layers.append(nn.BatchNorm1d(hidden_dim))
+
+            layers.append(self.activation)
+
+            if dropout > 0:
+                layers.append(nn.Dropout(dropout))
+
             prev_dim = hidden_dim
 
-        self.hidden_layers = nn.Sequential(*layers)
+        self.hidden_layers = nn.Sequential(*layers) if layers else nn.Identity()
 
         self.mu_layer = nn.Linear(prev_dim, output_dim * n_components)
         self.sigma_layer = nn.Linear(prev_dim, output_dim * n_components)

@@ -1,19 +1,35 @@
 import pandas as pd
+from pathlib import Path
 
 class DataLoader:
     def __init__(self,
-        input_data: pd.DataFrame
+        datapath: Path
     ):
-        self.input_data = input_data.copy()
+        '''
+        Provide a path to the dataset CSV file.
+        The DataLoader will read the data and compute the target columns based on the specified input columns.
+        The computed target columns will be added to the DataFrame and can be accessed using the show_columns() method.
+        '''
+        self.input_data = pd.read_csv(datapath).copy()
         self.column_names = self.input_data.columns.tolist()
+        self.target_columns = None
 
     def show_columns(self):
         print("Available columns in the dataset:")
         for col in self.column_names:
             print(f"- {col}")
 
+    def return_entire_df(self):
+        return self.input_data
+
+    def return_compact_data(self,
+                            idx_column:str = 'idx',
+                            smiles_column: str = 'smiles'
+    ) -> pd.DataFrame:
+        relevant_columns = [idx_column, smiles_column] + [col for col in self.target_columns if col not in [smiles_column]]
+        return self.input_data[relevant_columns]
+
     def compute_targets(self,
-        Eh_to_kcal: float = 627.50962,
         gibbs_singlet_column: str = 'Gibbs_S',
         gibbs_triplet_column: str = 'Gibbs_T',
         energy_singlet_singlet_column: str = 'E_S_geometry_S_energy',
@@ -21,6 +37,8 @@ class DataLoader:
         energy_triplet_singlet_column: str = 'E_T_geometry_S_energy',
         energy_singlet_triplet_column: str = 'E_S_geometry_T_energy',
         target_columns: list = ['adiabatic_energy', 'lambda_acceptor_singlet', 'lambda_donor_triplet'],
+        return_compact: bool = True,
+        Eh_to_kcal: float = 627.50962
     ) -> pd.DataFrame:
         '''
 
@@ -35,6 +53,7 @@ class DataLoader:
         :return: DataFrame with the computed target columns added.
         '''
 
+        self.target_columns = target_columns
         # Extract numpy arrays
         gibbs_s = self.input_data[gibbs_singlet_column].to_numpy()
         gibbs_t = self.input_data[gibbs_triplet_column].to_numpy()
@@ -66,4 +85,6 @@ class DataLoader:
             else:
                 raise ValueError(f"Unknown target column: {col}")
 
+        if return_compact:
+            return self.return_compact_data()
         return self.input_data

@@ -2,7 +2,7 @@ import torch
 from torch_geometric.data import Data
 from rdkit import Chem
 
-def mol_to_graph(smiles):
+def smiles_to_graph(smiles):
 
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:

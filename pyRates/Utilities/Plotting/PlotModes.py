@@ -1,0 +1,113 @@
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.stats import norm
+
+def plot_mode_distribution(
+    mu: np.ndarray,
+    sigma: np.ndarray,
+    pi: np.ndarray,
+    target_values: np.ndarray,
+    predicted_values: np.ndarray,
+    prediction_uncertainty: np.ndarray,
+    molecule_idx: int,
+    target_names: list,
+    main_title: str,
+    save_path: str = None
+):
+    """
+    Visualizes the mixture density network output for a single molecule across multiple target properties using subplots.
+
+    Args:
+        mu (np.ndarray): Mean values from the MDN of shape [n_molecules, n_targets, n_components].
+        sigma (np.ndarray): Standard deviation values from the MDN of shape [n_molecules, n_targets, n_components].
+        pi (np.ndarray): Mixture weights from the MDN of shape [n_molecules, n_targets, n_components].
+        target_values (np.ndarray): The actual target values for this molecule of shape [n_targets].
+        predicted_values (np.ndarray): The predicted values (e.g., mixture mean) for this molecule of shape [n_targets].
+        molecule_idx (int): The index of the molecule to plot.
+        target_names (list): A list of names for the target properties for the subplot titles.
+        main_title (str): The main title for the entire figure.
+        save_path (str, optional): If provided, the plot will be saved to this path. Defaults to None.
+    """
+    n_targets = len(target_names)
+    fig, axes = plt.subplots(1, n_targets, figsize=(10 * n_targets, 6), sharey=True)
+    if n_targets == 1:
+        axes = [axes]
+
+    fig.suptitle(main_title, fontsize=16)
+
+    # Create a colormap (defined outside loop for use in colorbar)
+    cmap = plt.get_cmap("viridis")
+
+    for target_idx, ax in enumerate(axes):
+        # Select the data for the specific molecule and target
+        mu_mol = mu[molecule_idx, target_idx, :]
+        sigma_mol = sigma[molecule_idx, target_idx, :]
+        pi_mol = pi[molecule_idx, target_idx, :]
+        target_value = target_values[target_idx]
+        predicted_value = predicted_values[molecule_idx, target_idx]
+        uncertainty = prediction_uncertainty[molecule_idx,target_idx]
+
+        n_components = len(mu_mol)
+
+        # Create a range for the x-axis
+        x_min = min(mu_mol - 4 * sigma_mol)
+        x_max = max(mu_mol + 4 * sigma_mol)
+        x_range = np.linspace(x_min, x_max, 1000)
+
+
+        # Sort components by pi value for better visualization
+        sorted_indices = np.argsort(pi_mol)
+
+        # Plot each Gaussian component scaled by its pi value
+        for i in sorted_indices:
+            mu_i = mu_mol[i]
+            sigma_i = sigma_mol[i]
+            pi_i = pi_mol[i]
+
+            # Generate the PDF for the component
+            y = norm.pdf(x_range, mu_i, sigma_i) * pi_i
+
+            # Use pi value to determine color
+            color_val = (pi_i - pi_mol.min()) / (pi_mol.max() - pi_mol.min() + 1e-8)
+            ax.fill_between(x_range, y, alpha=0.5, color=cmap(color_val), label=f'Mode {i+1} ($\pi$={pi_i:.2f})')
+
+        # Plot the combined PDF
+        y_combined = np.sum([norm.pdf(x_range, mu_mol[i], sigma_mol[i]) * pi_mol[i] for i in range(n_components)], axis=0)
+        ax.plot(x_range, y_combined, color='black', linestyle='--', linewidth=2, label='Combined PDF')
+
+        # Add a vertical line for the true target value
+        ax.axvline(target_value, color='red', linestyle='-', linewidth=2, label=f'True Value: {target_value:.2f}')
+
+        # Add a vertical line for the predicted value
+        ax.axvline(predicted_value, color='green', linestyle='--', linewidth=2, label=f'Predicted Value: {predicted_value:.2f}')
+
+        # Add uncertainty bounds as dotted lines and shaded area
+        lower_bound = predicted_value - uncertainty
+        upper_bound = predicted_value + uncertainty
+        ax.axvline(lower_bound, color='green', linestyle=':', linewidth=1.5)
+        ax.axvline(upper_bound, color='green', linestyle=':', linewidth=1.5)
+        y_lim = ax.get_ylim()
+        ax.fill_betweenx(y_lim, lower_bound, upper_bound, color='green', alpha=0.15, label=f'Uncertainty: ±{uncertainty:.2f}')
+        ax.set_ylim(y_lim)  # Reset y-limits after fill_betweenx
+
+        ax.set_title(f'{target_names[target_idx]}')
+        ax.set_xlabel('Value')
+        if target_idx == 0:
+            ax.set_ylabel('Probability Density (scaled by $\pi$)')
+        ax.legend()
+        ax.grid(True, which='both', linestyle='--', linewidth=0.5)
+
+    # Add a shared color bar
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=plt.Normalize(vmin=pi[molecule_idx].min(), vmax=pi[molecule_idx].max()))
+    sm.set_array([])
+    cbar = fig.colorbar(sm, ax=axes, orientation='vertical', fraction=0.05, pad=0.02)
+    cbar.set_label('$\pi$ (Mode Weight)')
+
+    plt.tight_layout(rect=(0, 0.03, 1, 0.95))
+
+    if save_path:
+        plt.savefig(save_path, dpi=300, bbox_inches='tight')
+        print(f"Plot saved to {save_path}")
+
+    plt.show()
+
