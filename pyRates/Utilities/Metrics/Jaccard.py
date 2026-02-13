@@ -1,6 +1,5 @@
 import numpy as np
 
-
 def top_k_jaccard_similarity(y_true: np.ndarray, y_pred: np.ndarray, k: int = 3) -> float:
     """
     Calculates the Jaccard coefficient for the top-k atoms with the highest density.
