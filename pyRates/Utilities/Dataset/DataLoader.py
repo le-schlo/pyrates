@@ -1,5 +1,7 @@
 import pandas as pd
 from pathlib import Path
+import ast
+
 
 class DataLoader:
     def __init__(self,
@@ -62,6 +64,10 @@ class DataLoader:
 
         # Compute target columns
         for col in target_columns:
+            if col == 'spin_population' and col in self.input_data.columns:
+                self.input_data[col] = self.input_data[col].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
+                continue
+
             if col == 'adiabatic_energy':
                 # Adiabatic energy: ΔE_adiabatic = (Gibbs_T + E_T_geometry_T) - (Gibbs_S + E_S_geometry_S)
                 self.input_data['adiabatic_energy'] = ((gibbs_t + et) - (gibbs_s + es)) * Eh_to_kcal

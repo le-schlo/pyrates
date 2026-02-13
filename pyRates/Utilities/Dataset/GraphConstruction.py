@@ -106,6 +106,9 @@ def smiles_to_graph(smiles):
     # Enable stereochemistry perception
     Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
 
+    # Add explicit hydrogens
+    mol = Chem.AddHs(mol)
+
     # Atom features
     node_features = []
     for atom in mol.GetAtoms():

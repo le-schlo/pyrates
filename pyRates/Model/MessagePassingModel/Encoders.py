@@ -65,13 +65,16 @@ class MPNN(nn.Module):
             for _ in range(depth)
         ])
 
-    def forward(self, data):
+    def forward(self, data, return_node_embeddings=False):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
         x = self.node_embedding(x)
 
         for layer in self.mpnn_layers:
             x = layer(x, edge_index, edge_attr)
+
+        if return_node_embeddings:
+            return x
 
         graph_out = global_add_pool(x, data.batch)
         return graph_out
@@ -89,7 +92,7 @@ class DMPNN(nn.Module):
         self.W_h = nn.Linear(hidden_size, hidden_size, bias=False)
         self.W_o = nn.Linear(node_features + hidden_size, hidden_size)
 
-    def forward(self, data):
+    def forward(self, data, return_node_embeddings=False):
         x, edge_index, edge_attr, rev_edge_index = data.x, data.edge_index, data.edge_attr, data.rev_edge_index
         num_nodes = x.size(0)
         row, col = edge_index
@@ -111,6 +114,9 @@ class DMPNN(nn.Module):
         node_h = torch.cat([x, aggr_message], dim=1)
         node_h = torch.relu(self.W_o(node_h))
         node_h = self.dropout(node_h)
+
+        if return_node_embeddings:
+            return node_h
 
         graph_out = global_add_pool(node_h, data.batch)
         return graph_out
@@ -160,7 +166,7 @@ class GAT(nn.Module):
 
         self.readout = nn.Linear(hidden_size, hidden_size)
 
-    def forward(self, data):
+    def forward(self, data, return_node_embeddings=False):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
         x = self.initial_embedding(x)
@@ -176,6 +182,10 @@ class GAT(nn.Module):
                 x = F.dropout(x, p=self.dropout, training=self.training)
 
         x = F.relu(self.readout(x))
+
+        if return_node_embeddings:
+            return x
+
         graph_out = global_add_pool(x, data.batch)
         return graph_out
 
@@ -209,7 +219,7 @@ class GIN(nn.Module):
             # GINEConv expects edge features
             self.layers.append(GINEConv(mlp, train_eps=True))
 
-    def forward(self, data):
+    def forward(self, data, return_node_embeddings=False):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
         x = F.relu(self.node_embedding(x))
@@ -220,6 +230,9 @@ class GIN(nn.Module):
             x = layer(x, edge_index, edge_attr=edge_attr)
             x = F.relu(x)
             x = F.dropout(x, p=self.dropout, training=self.training)
+
+        if return_node_embeddings:
+            return x
 
         graph_out = global_add_pool(x, data.batch)
         return graph_out
@@ -249,7 +262,7 @@ class GraphTransformer(nn.Module):
                 dropout=dropout
             ))
 
-    def forward(self, data):
+    def forward(self, data, return_node_embeddings=False):
         x, edge_index, edge_attr = data.x, data.edge_index, data.edge_attr
 
         x = F.relu(self.node_embedding(x))
@@ -259,6 +272,9 @@ class GraphTransformer(nn.Module):
             x = F.relu(x)
             # TransformerConv applies dropout internally, but we can add layer dropout
             x = F.dropout(x, p=self.dropout, training=self.training)
+
+        if return_node_embeddings:
+            return x
 
         graph_out = global_add_pool(x, data.batch)
         return graph_out
