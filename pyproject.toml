@@ -16,7 +16,8 @@ dependencies = [
     "networkx==3.6.1",
     "torch==2.5.1",
     "torchvision==0.20.1",
-    "torch-geometric==2.7.0"
+    "torch-geometric==2.7.0",
+    "optuna==4.7.0"
 ]
 
 [tool.setuptools.packages.find]
