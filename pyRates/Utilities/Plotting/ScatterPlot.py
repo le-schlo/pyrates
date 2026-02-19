@@ -1,6 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
-from sklearn.metrics import r2_score, mean_absolute_error, mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
 
 
 def plot_predictions(preds, targets, uncertainties=None, mode_weights=None,
@@ -83,7 +83,7 @@ def plot_predictions(preds, targets, uncertainties=None, mode_weights=None,
         # Calculate metrics
         r2 = r2_score(target_i, pred_i)
         mae = mean_absolute_error(target_i, pred_i)
-        rmse = np.sqrt(mean_squared_error(target_i, pred_i))
+        rmse = root_mean_squared_error(target_i, pred_i)
 
         # Add metrics to plot
         metrics_text = f'R² = {r2:.3f}\nMAE = {mae:.3f}\nRMSE = {rmse:.3f}'

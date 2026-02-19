@@ -6,12 +6,12 @@ def plot_mode_distribution(
     mu: np.ndarray,
     sigma: np.ndarray,
     pi: np.ndarray,
-    target_values: np.ndarray,
     predicted_values: np.ndarray,
     prediction_uncertainty: np.ndarray,
     molecule_idx: int,
     target_names: list,
-    main_title: str,
+    main_title: str = None,
+    target_values: np.ndarray = None,
     save_path: str = None
 ):
     """
@@ -21,11 +21,12 @@ def plot_mode_distribution(
         mu (np.ndarray): Mean values from the MDN of shape [n_molecules, n_targets, n_components].
         sigma (np.ndarray): Standard deviation values from the MDN of shape [n_molecules, n_targets, n_components].
         pi (np.ndarray): Mixture weights from the MDN of shape [n_molecules, n_targets, n_components].
-        target_values (np.ndarray): The actual target values for this molecule of shape [n_targets].
         predicted_values (np.ndarray): The predicted values (e.g., mixture mean) for this molecule of shape [n_targets].
+        prediction_uncertainty (np.ndarray): The prediction uncertainty for this molecule.
         molecule_idx (int): The index of the molecule to plot.
         target_names (list): A list of names for the target properties for the subplot titles.
         main_title (str): The main title for the entire figure.
+        target_values (np.ndarray, optional): The actual target values for this molecule of shape [n_targets]. Defaults to None.
         save_path (str, optional): If provided, the plot will be saved to this path. Defaults to None.
     """
     n_targets = len(target_names)
@@ -33,7 +34,8 @@ def plot_mode_distribution(
     if n_targets == 1:
         axes = [axes]
 
-    fig.suptitle(main_title, fontsize=16)
+    if main_title:
+        fig.suptitle(main_title, fontsize=16)
 
     # Create a colormap (defined outside loop for use in colorbar)
     cmap = plt.get_cmap("viridis")
@@ -43,7 +45,7 @@ def plot_mode_distribution(
         mu_mol = mu[molecule_idx, target_idx, :]
         sigma_mol = sigma[molecule_idx, target_idx, :]
         pi_mol = pi[molecule_idx, target_idx, :]
-        target_value = target_values[target_idx]
+        target_value = target_values[target_idx] if target_values is not None else None
         predicted_value = predicted_values[molecule_idx, target_idx]
         uncertainty = prediction_uncertainty[molecule_idx,target_idx]
 
@@ -75,8 +77,9 @@ def plot_mode_distribution(
         y_combined = np.sum([norm.pdf(x_range, mu_mol[i], sigma_mol[i]) * pi_mol[i] for i in range(n_components)], axis=0)
         ax.plot(x_range, y_combined, color='black', linestyle='--', linewidth=2, label='Combined PDF')
 
-        # Add a vertical line for the true target value
-        ax.axvline(target_value, color='red', linestyle='-', linewidth=2, label=f'True Value: {target_value:.2f}')
+        # Add a vertical line for the true target value (only if target_values is provided)
+        if target_value is not None:
+            ax.axvline(target_value, color='red', linestyle='-', linewidth=2, label=f'True Value: {target_value:.2f}')
 
         # Add a vertical line for the predicted value
         ax.axvline(predicted_value, color='green', linestyle='--', linewidth=2, label=f'Predicted Value: {predicted_value:.2f}')

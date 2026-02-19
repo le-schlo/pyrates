@@ -1,10 +1,6 @@
 import torch.nn as nn
 import torch.nn.functional as F
 
-import torch.nn as nn
-import torch.nn.functional as F
-
-
 class MDN(nn.Module):
 
     def __init__(self,
@@ -55,6 +51,10 @@ class MDN(nn.Module):
         self.mu_layer = nn.Linear(prev_dim, output_dim * n_components)
         self.sigma_layer = nn.Linear(prev_dim, output_dim * n_components)
         self.pi_layer = nn.Linear(prev_dim, output_dim * n_components)
+
+        # Initialize weights
+        nn.init.constant_(self.pi_layer.bias, 0)
+        nn.init.xavier_uniform_(self.pi_layer.weight)
 
     def forward(self, x):
         h = self.hidden_layers(x)
