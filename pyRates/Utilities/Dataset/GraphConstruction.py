@@ -90,7 +90,7 @@ def get_bond_features(bond):
     return features
 
 
-def smiles_to_graph(smiles):
+def smiles_to_graph(smiles, use_explicit_hydrogens=False, use_stereochemistry=True):
     """
     Converts a SMILES string to a graph representation suitable for a directed MPNN.
 
@@ -104,10 +104,12 @@ def smiles_to_graph(smiles):
         return None
 
     # Enable stereochemistry perception
-    Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
+    if use_stereochemistry:
+        Chem.AssignStereochemistry(mol, cleanIt=True, force=True)
 
     # Add explicit hydrogens
-    mol = Chem.AddHs(mol)
+    if use_explicit_hydrogens:
+        mol = Chem.AddHs(mol)
 
     # Atom features
     node_features = []
@@ -150,5 +152,5 @@ def smiles_to_graph(smiles):
         for i in range(num_edges):
             rev_edge_index[i] = i + 1 if i % 2 == 0 else i - 1
 
-    return Data(x=node_features, edge_index=edge_index, edge_attr=edge_attr, rev_edge_index=rev_edge_index)
+    return Data(x=node_features, edge_index=edge_index, edge_attr=edge_attr, rev_edge_index=rev_edge_index, smiles=smiles)
 

@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from pyRates.Model.FeedForwardModel.MixtureDensityNetwork import MDN
-from pyRates.Model.MessagePassingModel.Encoders import DMPNN, GAT, MPNN, GIN, GraphTransformer
+from pyRates.Model.MessagePassingModel.Encoders import DMPNN, GAT, MPNN, GIN, GraphTransformer, GraphTransformerv2
 from torch_geometric.nn import global_add_pool
 
 
@@ -103,7 +103,8 @@ class MPNN_MDN(nn.Module):
             'gat': GAT,
             'mpnn': MPNN,
             'gin': GIN,
-            'transformer': GraphTransformer
+            'transformer': GraphTransformer,
+            'transformer_v2': GraphTransformerv2
         }
         encoder_class = encoder_classes.get(self.encoder_type.lower())
         if not encoder_class:

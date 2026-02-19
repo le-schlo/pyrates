@@ -68,11 +68,13 @@ class MoleculeDataset(Dataset):
 
         # Process Graphs
         for i, smiles in enumerate(smiles_list):
-            graph = smiles_to_graph(smiles)
+            graph = smiles_to_graph(smiles, use_explicit_hydrogens=False, use_stereochemistry=True)
             if graph is not None:
                 self.graphs.append(graph)
 
                 # Process Targets
+                if len(targets) == 0:
+                    continue
                 t = targets[i]
 
                 # --- VALIDATION START ---
