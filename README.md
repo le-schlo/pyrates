@@ -2,14 +2,13 @@
 
 Framework for predicting properties of excited states.
 
-![pyRates architecture](image/pyRates_cover.png)
+<img src="image/pyRates_cover.png" alt="pyRates architecture" width="60%" />
 
 ## Installation
 
 ### Requirements
-
-- Python >= 3.12
 - Linux
+- Python >= 3.12
 - [uv](https://github.com/astral-sh/uv)
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (optional, for GPU support)
 
@@ -70,3 +69,4 @@ The model outputs parameters for a Gaussian Mixture Model (means, standard devia
 ### Visualization and Metrics
 - Plotting modules for scatter plots and mode visualization.
 - Metrics such as Jaccard and Ranked Score.
+
