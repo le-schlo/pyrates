@@ -1,10 +1,10 @@
 # pyRates
 
-Framework for predicting excited state properties.
+Framework for predicting properties of excited states.
 
 ## Installation
 
-### Prerequisites
+### Requirements
 
 - Python >= 3.12
 - Linux
@@ -15,12 +15,12 @@ Framework for predicting excited state properties.
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/yourusername/pyRates.git
+   git clone https://github.com/le-schlo/pyRates.git
    cd pyRates
    ```
 
-2. **Setup environment and install:**
-   Create a virtual environment and install dependencies defined in `pyproject.toml` using `uv`.
+2. **Set up environment and install dependencies:**
+   Create a virtual environment and install dependencies from `pyproject.toml` using `uv`.
    ```bash
    uv venv
    source .venv/bin/activate
@@ -29,38 +29,42 @@ Framework for predicting excited state properties.
 
 ## Structure
 
-- `pyRates/`: Core library code.
+- `pyRates/`: Core library.
+  - `Energy/`: Marcus theory and energy calculations.
   - `Model/`: Neural network architectures.
-    - `MessagePassingModel/`: Graph encoders (D-MPNN, GAT, GIN, etc.).
     - `FeedForwardModel/`: Mixture Density Network (MDN) head.
-    - `MPNN_MDN.py`: Main model class combining graph encoders with MDN.
-  - `Utilities/`: Helper functionalities.
-    - `Dataset/`: Data loading and graph construction (including one-hot encoding).
+    - `MessagePassingModel/`: Graph encoders (D-MPNN, GAT, GIN, Transformer, MPNN).
+    - `MPNN_MDN.py`: Main model, combines graph encoder with MDN.
+    - `Inference.py`: Inference routines.
+    - `Loss.py`: Loss functions for model training and evaluation.
+    - `Training.py`: Training routines, optimization, and model fitting.
+  - `Utilities/`: Utility functions.
+    - `Dataset/`: Data loading, graph construction, one-hot encoding.
+    - `Metrics/`: Metrics (Jaccard, Ranked Score).
     - `Plotting/`: Visualization tools.
-- `playground/`: Experimental scripts.
-  - `benchmarking/`: Scripts for comparing different model architectures (`gat_dmpnn`).
-  - `model_setup/`: Training and inference scripts.
-- `data/`: Directory for datasets.
 
 ## Modules
 
-### Graph Encoders (`pyRates.Model.MessagePassingModel`)
-The framework supports multiple graph encoder architectures, selectable via the `encoder_type` parameter in `MPNN_MDN`:
+### Graph Encoder (`pyRates.Model.MessagePassingModel`)
+Supports various graph encoder architectures, selectable via the `encoder_type` parameter in `MPNN_MDN`:
 
-- **D-MPNN (`dmpnn`)**: Directed Message Passing Neural Network. Passes messages along directed edges (bonds) to capture local chemical environments without immediate backtracking. Often the state-of-the-art for molecular property prediction.
-- **GAT (`gat`)**: Graph Attention Network. Uses attention mechanisms to weight the importance of neighboring atoms. Our implementation integrates edge features directly into the attention mechanism.
-- **MPNN (`mpnn`)**: Standard undirected Message Passing Neural Network using GRU updates. Robust baseline that effectively aggregates local information.
-- **GIN (`gin`)**: Graph Isomorphism Network (specifically `GINEConv`). Designed to maximize the theoretical discriminative power of the GNN, natively supporting edge features.
-- **Graph Transformer (`transformer`)**: Adapts the Transformer architecture for graphs, utilizing multi-head attention mechanisms that explicitly incorporate edge attributes.
+- **D-MPNN (`dmpnn`)**: Directed Message Passing Neural Network.
+- **GAT (`gat`)**: Graph Attention Network with edge features.
+- **MPNN (`mpnn`)**: Standard Message Passing Neural Network with GRU.
+- **GIN (`gin`)**: Graph Isomorphism Network (GINEConv).
+- **Graph Transformer (`transformer`)**: Native Graph Transformer.
+- **Transformer_v2 (`transformer_v2`)**: Advanced Graph Transformer with architectural improvements like residual connections, normalization and FFN.
 
-### Mixture Density Network (`pyRates.Model.FeedForwardModel.MDN`)
-Instead of predicting single scalar values, the model outputs parameters for a Gaussian Mixture Model (means, standard deviations, and weights). This enables:
-- Prediction of full probability distributions for target properties.
-- Capture of aleatoric uncertainty (data noise).
-- Modeling of multi-modal outputs (e.g., if a property can have multiple valid states).
+### Mixture Density Network (`pyRates.Model.FeedForwardModel.MixtureDensityNetwork`)
+The model outputs parameters for a Gaussian Mixture Model (means, standard deviations, weights):
+- Predicts probability distributions for targets.
+- Captures uncertainty and multimodal outputs.
 
 ### Data Handling (`pyRates.Utilities.Dataset`)
-- **Graph Construction**: Converts SMILES strings into graph objects (`torch_geometric.data.Data`).
-- **Featurization**: Uses comprehensive one-hot encoding for atom (atomic number, degree, hybridization, etc.) and bond (type, stereo) properties.
-- **Normalization**: Targets are standardized using `StandardScaler`.
+- **Graph construction**: Converts SMILES strings to graph objects (`torch_geometric.data.Data`).
+- **Featurization**: Atom features typically include atom type, degree, formal charge, hybridization, aromaticity, and chirality. Bond features include bond type, conjugation, ring membership, and stereochemistry. All features are encoded using one-hot or categorical encoding, enabling the models to process molecular graphs efficiently.
+- **Normalization**: StandardScaler is used for target values to ensure stable training.
 
+### Visualization and Metrics
+- Plotting modules for scatter plots and mode visualization.
+- Metrics such as Jaccard and Ranked Score.

@@ -50,7 +50,6 @@ class GraphTransformerv2(nn.Module):
     """
     Graph Transformer Network V2.
     Incorporates Residual Connections, LayerNorm, and Feed-Forward Networks
-    standard in Transformer architectures (like SimG).
     """
     def __init__(self, node_features, edge_features, hidden_size, num_heads=4, depth=3, dropout=0.1, **kwargs):
         super(GraphTransformerv2, self).__init__()
