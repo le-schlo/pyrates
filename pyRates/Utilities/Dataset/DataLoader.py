@@ -89,7 +89,7 @@ class DataLoader:
         if filter_limits is None:
             # Default limits
             default_limits = {
-                'spin_population': (0, None),
+                'spin_population': (None, None),
                 'adiabatic_energy': (15, 120),
                 'lambda_acceptor_singlet': (0, None),
                 'lambda_donor_triplet': (0, None)
