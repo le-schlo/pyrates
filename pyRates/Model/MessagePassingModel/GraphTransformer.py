@@ -109,7 +109,6 @@ class GraphTransformerv2(nn.Module):
             x = norm2(x_in + x_out) # Residual + Norm
 
         if return_node_embeddings:
-            # Final activation often helpful before readout
             return x
 
         graph_out = global_add_pool(x, data.batch)

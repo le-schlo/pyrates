@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from pyRates.Model.FeedForwardModel.MixtureDensityNetwork import MDN
-from pyRates.Model.MessagePassingModel.Encoders import DMPNN, GAT, MPNN, GIN, GraphTransformer, GraphTransformerv2
+from pyRates.Model.MessagePassingModel.Encoders import DMPNN, GAT, MPNN, GIN, GraphTransformer, GraphTransformerv2, GraphGPS
 from torch_geometric.nn import global_add_pool
 
 
@@ -47,7 +47,7 @@ class MPNN_MDN(nn.Module):
             epsilon (float): Small constant for numerical stability.
             device (str): Device to run the model on.
             atom_wise (bool): Legacy flag. Whether to predict atom-wise properties (no pooling).
-            **encoder_args: Additional arguments for the encoder (e.g., num_heads for GAT).
+            **encoder_args: Additional arguments for the encoder (e.g., num_heads for GAT, walk_length for positional encoding).
         """
         super().__init__()
 
@@ -104,7 +104,8 @@ class MPNN_MDN(nn.Module):
             'mpnn': MPNN,
             'gin': GIN,
             'transformer': GraphTransformer,
-            'transformer_v2': GraphTransformerv2
+            'transformer_v2': GraphTransformerv2,
+            'gps': GraphGPS
         }
         encoder_class = encoder_classes.get(self.encoder_type.lower())
         if not encoder_class:

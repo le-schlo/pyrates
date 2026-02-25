@@ -1,6 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from pyRates.Utilities.Dataset.GraphConstruction import smiles_to_graph
+from pyRates.Model.MessagePassingModel.PositionalEncoding import *
 from torch_geometric.data import Batch
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
@@ -34,7 +35,7 @@ class DualScaler:
 
 class MoleculeDataset(Dataset):
 
-    def __init__(self, smiles_list, targets):
+    def __init__(self, smiles_list, targets, positional_encoding_kwargs=None, **kwargs):
         self.graphs = []
 
         # Analyze targets to split into graph and node targets
@@ -70,6 +71,12 @@ class MoleculeDataset(Dataset):
         for i, smiles in enumerate(smiles_list):
             graph = smiles_to_graph(smiles, use_explicit_hydrogens=False, use_stereochemistry=True)
             if graph is not None:
+                #Add positional encoding for GraphGPS, stored in graph.rwse and graph.rrwp_edge
+                if positional_encoding_kwargs is not None:
+                    walk_length = positional_encoding_kwargs['walk_length']
+                    graph = add_random_walk_positional_encoding(graph, walk_length=walk_length)
+                    graph = add_relative_random_walk_positional_encoding(graph, walk_length=walk_length)
+
                 self.graphs.append(graph)
 
                 # Process Targets
@@ -177,7 +184,15 @@ def collate_fn(batch):
     # Use PyG's own batching which handles attributes
     return Batch.from_data_list(batch)
 
-def create_dataloaders(smiles_list, targets, train_idx, val_idx, test_idx, batch_size=64, num_workers=8, scaler_path='checkpoints/scaler.pkl'):
+def create_dataloaders(smiles_list,
+                       targets,
+                       train_idx,
+                       val_idx,
+                       test_idx,
+                       batch_size=64,
+                       num_workers=8,
+                       scaler_path='checkpoints/scaler.pkl',
+                       positional_encoding_kwargs=None, **kwargs):
     '''
     Create dataloaders for training, validation, and testing. and scale targets using StandardScaler.
     '''
@@ -289,9 +304,9 @@ def create_dataloaders(smiles_list, targets, train_idx, val_idx, test_idx, batch
     if scaler_path:
         joblib.dump(scaler, scaler_path)
 
-    train_dataset = MoleculeDataset(smiles_train, y_train)
-    val_dataset = MoleculeDataset(smiles_val, y_val)
-    test_dataset = MoleculeDataset(smiles_test, y_test)
+    train_dataset = MoleculeDataset(smiles_train, y_train, positional_encoding_kwargs=positional_encoding_kwargs)
+    val_dataset = MoleculeDataset(smiles_val, y_val, positional_encoding_kwargs=positional_encoding_kwargs)
+    test_dataset = MoleculeDataset(smiles_test, y_test, positional_encoding_kwargs=positional_encoding_kwargs)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
                               collate_fn=collate_fn, num_workers=num_workers)

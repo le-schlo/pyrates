@@ -46,7 +46,8 @@ def train_epoch(model, loader, optimizer, device):
 def validate_epoch(model, loader, device):
     """Validate and return average loss."""
     model.eval()
-    total_loss = 0
+    total_loss = total_loss_g = total_loss_n = 0
+    total_nodes = 0
 
     with torch.no_grad():
         for batch in loader:
@@ -60,13 +61,20 @@ def validate_epoch(model, loader, device):
                 loss_g = mdn_loss(mu_g, sigma_g, pi_g, batch.y)
                 mu_n, sigma_n, pi_n = out_node
                 loss_n = mdn_loss(mu_n, sigma_n, pi_n, batch.node_y)
-                loss = loss_g + loss_n
+
+                total_loss_g += loss_g.item() * batch.num_graphs
+                total_loss_n += loss_n.item() * batch.num_nodes
+                total_nodes += batch.num_nodes
+                total_loss += (loss_g.item() + loss_n.item()) * batch.num_graphs
             else:
                 mu, sigma, pi = outputs
-                loss = mdn_loss(mu, sigma, pi, batch.y)
+                total_loss = mdn_loss(mu, sigma, pi, batch.y)
 
-            total_loss += loss.item()
+    n_graphs = len(loader.dataset)
+    avg_loss_g = total_loss_g / n_graphs
+    avg_loss_n = total_loss_n / total_nodes if total_nodes > 0 else 0
+    avg_loss = total_loss / n_graphs
 
-    return total_loss / len(loader)
+    return avg_loss, avg_loss_g, avg_loss_n
 
 
