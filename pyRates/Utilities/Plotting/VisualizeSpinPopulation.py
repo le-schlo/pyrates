@@ -6,11 +6,11 @@ from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem import rdDepictor
 from PIL import Image
 
-
 def visualize_density(smiles: str, spin_population: list, show_image=True, rgb=[0, 64, 128]):
     mol = Chem.MolFromSmiles(smiles)
     nh_indices = [a.GetIdx() for a in mol.GetAtoms() if a.GetSymbol() == 'N' and a.GetTotalNumHs() > 0]
-    mol = Chem.AddHs(mol, onlyOnAtoms=nh_indices)
+    if len(nh_indices) > 0:
+        mol = Chem.AddHs(mol, onlyOnAtoms=nh_indices)
     rdDepictor.Compute2DCoords(mol)
 
     num_heavy_atoms = len(spin_population)
@@ -67,5 +67,4 @@ def spin_to_color(value, vmin, vmax, rgb=[0, 64, 128]):
     rgb_transformed = np.array(rgb)/255.0
     return_value = np.append(rgb_transformed, norm)
     return tuple(return_value)
-
 

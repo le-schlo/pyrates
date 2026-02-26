@@ -1,6 +1,6 @@
 import torch
-import numpy as np
-from pyRates.Model.Loss import mdn_loss
+from torch_scatter import scatter_mean
+from pyRates.Model.Loss import mdn_loss, mdn_loss_per_sample
 
 def train_epoch(model, loader, optimizer, device):
     """Train for one epoch and return average loss."""
@@ -13,23 +13,8 @@ def train_epoch(model, loader, optimizer, device):
 
         outputs = model(batch)
 
-        # Check for dual output (Graph + Node)
-        if isinstance(outputs, tuple) and len(outputs) == 2 and isinstance(outputs[0], tuple) and isinstance(outputs[1], tuple):
-            out_graph, out_node = outputs
-
-            # Graph Loss (using batch.y)
-            mu_g, sigma_g, pi_g = out_graph
-            loss_g = mdn_loss(mu_g, sigma_g, pi_g, batch.y)
-
-            # Node Loss (using batch.node_y)
-            mu_n, sigma_n, pi_n = out_node
-            loss_n = mdn_loss(mu_n, sigma_n, pi_n, batch.node_y)
-
-            loss = loss_g + loss_n
-        else:
-             # Standard Single Head
-             mu, sigma, pi = outputs
-             loss = mdn_loss(mu, sigma, pi, batch.y)
+        loss_dict = compute_loss(model, outputs, batch)
+        loss = loss_dict["loss"]
 
         if torch.isnan(loss):
             raise ValueError("NaN loss detected!")
@@ -46,35 +31,56 @@ def train_epoch(model, loader, optimizer, device):
 def validate_epoch(model, loader, device):
     """Validate and return average loss."""
     model.eval()
-    total_loss = total_loss_g = total_loss_n = 0
-    total_nodes = 0
+    totals = {}
 
     with torch.no_grad():
         for batch in loader:
             batch = batch.to(device)
 
             outputs = model(batch)
-
-            if isinstance(outputs, tuple) and len(outputs) == 2 and isinstance(outputs[0], tuple) and isinstance(outputs[1], tuple):
-                out_graph, out_node = outputs
-                mu_g, sigma_g, pi_g = out_graph
-                loss_g = mdn_loss(mu_g, sigma_g, pi_g, batch.y)
-                mu_n, sigma_n, pi_n = out_node
-                loss_n = mdn_loss(mu_n, sigma_n, pi_n, batch.node_y)
-
-                total_loss_g += loss_g.item() * batch.num_graphs
-                total_loss_n += loss_n.item() * batch.num_nodes
-                total_nodes += batch.num_nodes
-                total_loss += (loss_g.item() + loss_n.item()) * batch.num_graphs
-            else:
-                mu, sigma, pi = outputs
-                total_loss = mdn_loss(mu, sigma, pi, batch.y)
+            loss_dict = compute_loss(model, outputs, batch)
+            n = batch.num_graphs
+            for key, value in loss_dict.items():
+                totals[key] = totals.get(key, 0.0) + value.item() * n
 
     n_graphs = len(loader.dataset)
-    avg_loss_g = total_loss_g / n_graphs
-    avg_loss_n = total_loss_n / total_nodes if total_nodes > 0 else 0
-    avg_loss = total_loss / n_graphs
+    return {key: total / n_graphs for key, total in totals.items()}
 
-    return avg_loss, avg_loss_g, avg_loss_n
+def compute_loss(model, outputs, batch):
 
+    if isinstance(outputs, tuple) and len(outputs) == 2 and isinstance(outputs[0], tuple) and isinstance(outputs[1], tuple):
+        out_graph, out_node = outputs
 
+        # Graph Loss (using batch.y)
+        mu_g, sigma_g, pi_g = out_graph
+        loss_g = mdn_loss_per_sample(mu_g, sigma_g, pi_g, batch.y).mean()  # Mean over graph samples
+
+        # Node Loss (using batch.node_y) returning mean over nodes per graph, then mean over graphs
+        mu_n, sigma_n, pi_n = out_node
+        node_losses = mdn_loss_per_sample(mu_n, sigma_n, pi_n, batch.node_y)
+        loss_n = scatter_mean(node_losses, batch.batch, dim=0).mean()
+
+        #  weighting
+        weight_g = model.weight_graph_loss
+        weight_n = 1 - model.weight_graph_loss
+
+        loss = (weight_g * loss_g +
+                weight_n * loss_n)
+
+        return {"loss": loss, "loss_g": loss_g, "loss_n": loss_n}
+
+    else:
+        # No weighting needed if only one type of output is present, just compute the corresponding loss
+        if model.num_graph_tasks > 0 and model.num_node_tasks == 0:
+            mu, sigma, pi = outputs
+            loss = mdn_loss(mu, sigma, pi, batch.y)  # equivalent to mdn_loss_per_sample(...).mean() for graph-level loss
+            return {"loss": loss}
+
+        elif model.num_node_tasks > 0 and model.num_graph_tasks == 0:
+            mu, sigma, pi = outputs
+            node_losses = mdn_loss_per_sample(mu, sigma, pi, batch.node_y)
+            loss = scatter_mean(node_losses, batch.batch, dim=0).mean()  # mean over nodes per graph, then mean over graphs
+            return {"loss": loss}
+
+        else:
+            raise ValueError("Model output format not recognized. Expected either graph-level or node-level outputs, or a tuple of both.")

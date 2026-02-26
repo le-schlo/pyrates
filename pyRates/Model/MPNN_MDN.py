@@ -16,9 +16,9 @@ class MPNN_MDN(nn.Module):
                  node_hidden_dim=128,
                  encoder_layers=3,
                  encoder_dropout=0.1,
-                 num_tasks=None, # Changed default to None to detect usage
-                 num_graph_tasks=0,
+                 num_graph_tasks=1,
                  num_node_tasks=0,
+                 weight_graph_loss=0.5,
                  n_components=3,
                  mdn_hidden_dims=[128, 256, 128],
                  mdn_dropout=0.1,
@@ -26,7 +26,6 @@ class MPNN_MDN(nn.Module):
                  use_batch_norm=True,
                  epsilon=1e-6,
                  device='auto',
-                 atom_wise=False,
                  **encoder_args):
         """
         Initialize the model.
@@ -36,8 +35,8 @@ class MPNN_MDN(nn.Module):
             node_hidden_dim (int): Hidden dimension for node embeddings.
             encoder_layers (int): Number of layers in the encoder.
             encoder_dropout (float): Dropout rate for the encoder.
-            num_tasks (int): Legacy argument. If used, maps to graph or node tasks based on atom_wise.
             num_graph_tasks (int): Number of graph-level output tasks.
+            weight_graph_loss (float): Weight of graph loss. Should be between 0 and 1. Weight of node loss will be (1 - weight_graph_loss). Default is 50/50
             num_node_tasks (int): Number of atom-level output tasks.
             n_components (int): Number of Gaussian components in MDN.
             mdn_hidden_dims (list): Hidden layer dimensions for MDN.
@@ -46,7 +45,6 @@ class MPNN_MDN(nn.Module):
             use_batch_norm (bool): Whether to use batch normalization in MDN.
             epsilon (float): Small constant for numerical stability.
             device (str): Device to run the model on.
-            atom_wise (bool): Legacy flag. Whether to predict atom-wise properties (no pooling).
             **encoder_args: Additional arguments for the encoder (e.g., num_heads for GAT, walk_length for positional encoding).
         """
         super().__init__()
@@ -58,21 +56,11 @@ class MPNN_MDN(nn.Module):
             raise ValueError("CUDA requested but not available.")
         self.device = torch.device(device)
 
-        # Handle Legacy Arguments
-        if num_tasks is not None:
-            if atom_wise:
-                num_node_tasks = num_tasks
-            else:
-                num_graph_tasks = num_tasks
-        else:
-             # If num_tasks not provided, rely on explicit args.
-             # If defaults (0,0) used, this might be an issue if user didn't provide num_tasks.
-             # Assume num_tasks=1 default if nothing provided?
-             if num_graph_tasks == 0 and num_node_tasks == 0:
-                 if atom_wise:
-                     num_node_tasks = 1
-                 else:
-                     num_graph_tasks = 1
+        if num_graph_tasks == 0 and num_node_tasks == 0:
+            raise ValueError("At least one of num_graph_tasks or num_node_tasks must be greater than 0.")
+
+        if not (0 <= weight_graph_loss <= 1):
+            raise ValueError("weight_graph_loss must be between 0 and 1.")
 
         # Store hyperparameters
         self.encoder_type = encoder_type
@@ -82,13 +70,13 @@ class MPNN_MDN(nn.Module):
         self.encoder_args = encoder_args
         self.num_graph_tasks = num_graph_tasks
         self.num_node_tasks = num_node_tasks
+        self.weight_graph_loss = weight_graph_loss
         self.n_components = n_components
         self.mdn_hidden_dims = mdn_hidden_dims
         self.mdn_dropout = mdn_dropout
         self.mdn_activation = mdn_activation
         self.use_batch_norm = use_batch_norm
         self.epsilon = epsilon
-        # atom_wise is stored effectively by checking if num_node_tasks > 0
 
         # Layers (initialized lazily)
         self.encoder = None
