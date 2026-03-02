@@ -36,7 +36,7 @@ Framework for predicting properties of excited states.
   - `Energy/`: Marcus theory and energy calculations.
   - `Model/`: Neural network architectures.
     - `FeedForwardModel/`: Mixture Density Network (MDN) head.
-    - `MessagePassingModel/`: Graph encoders (D-MPNN, GAT, GIN, Transformer, MPNN, GPS).
+    - `GraphNeuralNetwork/`: Graph encoders (D-MPNN, GAT, GIN, Transformer, MPNN, GPS).
     - `MPNN_MDN.py`: Main model, combines graph encoder with MDN.
     - `Inference.py`: Inference routines.
     - `Loss.py`: Loss functions for model training and evaluation.
@@ -48,7 +48,7 @@ Framework for predicting properties of excited states.
 
 ## Modules
 
-### Graph Encoder (`pyRates.Model.MessagePassingModel`)
+### Graph Encoder (`pyRates.Model.GraphNeuralNetwork`)
 Supports various graph encoder architectures, selectable via the `encoder_type` parameter in `MPNN_MDN`:
 
 - **D-MPNN (`dmpnn`)**: Directed Message Passing Neural Network.

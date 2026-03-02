@@ -1,7 +1,7 @@
 import torch
 import torch.nn as nn
 from pyRates.Model.FeedForwardModel.MixtureDensityNetwork import MDN
-from pyRates.Model.MessagePassingModel.Encoders import DMPNN, GAT, MPNN, GIN, GraphTransformer, GraphTransformerv2, GraphGPS
+from pyRates.Model.GraphNeuralNetwork.Encoders import DMPNN, GAT, MPNN, GIN, GraphTransformer, GraphTransformerv2, GraphGPS
 from torch_geometric.nn import global_add_pool
 
 

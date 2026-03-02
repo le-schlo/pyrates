@@ -1,7 +1,7 @@
 import torch
 from torch.utils.data import Dataset
 from pyRates.Utilities.Dataset.GraphConstruction import smiles_to_graph
-from pyRates.Model.MessagePassingModel.PositionalEncoding import *
+from pyRates.Model.GraphNeuralNetwork.PositionalEncoding import *
 from torch_geometric.data import Batch
 from sklearn.preprocessing import StandardScaler
 from torch.utils.data import DataLoader
