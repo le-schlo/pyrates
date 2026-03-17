@@ -5,7 +5,7 @@ from pyRates.Model.GraphNeuralNetwork.Encoders import DMPNN, GAT, MPNN, GIN, Gra
 from torch_geometric.nn import global_add_pool
 
 
-class MPNN_MDN(nn.Module):
+class GraphMDN(nn.Module):
     """
     A modular graph neural network model with a Mixture Density Network head.
     It can use different graph encoders like D-MPNN, GAT or MPNN.
@@ -25,6 +25,8 @@ class MPNN_MDN(nn.Module):
                  mdn_activation='relu',
                  use_batch_norm=True,
                  epsilon=1e-6,
+                 lambda_cal=0.0,
+                 lambda_sharp=0.0,
                  device='auto',
                  **encoder_args):
         """
@@ -44,6 +46,8 @@ class MPNN_MDN(nn.Module):
             mdn_activation (str): Activation function for MDN.
             use_batch_norm (bool): Whether to use batch normalization in MDN.
             epsilon (float): Small constant for numerical stability.
+            lambda_cal (float): Weight for calibration loss (encourages |error| ≈ uncertainty). Default 0.0 (disabled).
+            lambda_sharp (float): Weight for sharpness penalty (penalizes overconfident predictions). Default 0.0 (disabled).
             device (str): Device to run the model on.
             **encoder_args: Additional arguments for the encoder (e.g., num_heads for GAT, walk_length for positional encoding).
         """
@@ -77,6 +81,8 @@ class MPNN_MDN(nn.Module):
         self.mdn_activation = mdn_activation
         self.use_batch_norm = use_batch_norm
         self.epsilon = epsilon
+        self.lambda_cal = lambda_cal
+        self.lambda_sharp = lambda_sharp
 
         # Layers (initialized lazily)
         self.encoder = None
@@ -185,6 +191,8 @@ class MPNN_MDN(nn.Module):
             'mdn_activation': self.mdn_activation,
             'use_batch_norm': self.use_batch_norm,
             'epsilon': self.epsilon,
+            'lambda_cal': self.lambda_cal,
+            'lambda_sharp': self.lambda_sharp,
             'device': str(self.device),
             'atom_wise': self.atom_wise
         }

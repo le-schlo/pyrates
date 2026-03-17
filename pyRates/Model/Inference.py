@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 from pathlib import Path
-from pyRates.Model.MPNN_MDN import MPNN_MDN
+from pyRates.Model.GraphMDN import GraphMDN
 from torch.utils.data import DataLoader
 from pyRates.Utilities.Dataset.MoleculeDataset import MoleculeDataset, collate_fn
 from pyRates.Model.FeedForwardModel.mdn_utils import compute_mixture_mean, compute_max_mode
@@ -111,7 +111,7 @@ def get_predictions(smiles: list,
     checkpoint = torch.load(str(model_path / 'checkpoints' / 'model.pt'))
     encoder_args = checkpoint['model_config']['encoder_args'] if 'encoder_args' in checkpoint['model_config'] else {}
 
-    model = MPNN_MDN(
+    model = GraphMDN(
         encoder_type=checkpoint['model_config']['encoder_type'],
         node_hidden_dim=checkpoint['model_config']['node_hidden_dim'],
         encoder_layers=checkpoint['model_config']['encoder_layers'],
@@ -131,7 +131,7 @@ def get_predictions(smiles: list,
     )
 
     print(f"Loading {len(smiles)} molecules for prediction")
-    test_dataset = MoleculeDataset(smiles, [], positional_encoding_kwargs=checkpoint['model_config'])
+    test_dataset = MoleculeDataset(smiles, positional_encoding_kwargs=checkpoint['model_config'])
     test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     sample_batch = next(iter(test_loader))
@@ -182,8 +182,19 @@ def _process_mdn_output(mu, sigma, pi, batch, target_attr, mode='mixture_mean'):
     weights = pi.cpu().numpy()
 
     targets = None
-    if hasattr(batch, target_attr) and getattr(batch, target_attr) is not None:
-        targets = getattr(batch, target_attr).cpu().numpy()
+    if hasattr(batch, target_attr):
+        raw_targets = getattr(batch, target_attr)
+        if raw_targets is not None:
+            if isinstance(raw_targets, torch.Tensor):
+                targets = raw_targets.cpu().numpy()
+            elif isinstance(raw_targets, np.ndarray):
+                targets = raw_targets
+            elif isinstance(raw_targets, list):
+                targets = np.array(raw_targets)
+
+            # Check if targets contains None
+            if targets is not None and targets.dtype == object and (targets == None).any():
+                targets = None
 
     mdn_params = {
         'mu': mu.cpu().numpy(),
@@ -195,8 +206,10 @@ def _process_mdn_output(mu, sigma, pi, batch, target_attr, mode='mixture_mean'):
 
 
 def _stack_arrays(arrays):
-    """Stack list of arrays, return None if empty."""
-    return np.vstack(arrays) if arrays else None
+    """Stack list of arrays, return None if empty or contains None."""
+    if not arrays or any(a is None for a in arrays):
+        return None
+    return np.vstack(arrays)
 
 
 def _scale_mdn_output(preds, targets, unc, mdn_params, scaler):

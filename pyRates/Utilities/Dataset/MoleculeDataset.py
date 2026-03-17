@@ -35,122 +35,60 @@ class DualScaler:
 
 class MoleculeDataset(Dataset):
 
-    def __init__(self, smiles_list, targets, positional_encoding_kwargs=None, **kwargs):
+    def __init__(self, smiles_list, node_targets=None, graph_targets=None, positional_encoding_kwargs=None, **kwargs):
         self.graphs = []
-
-        # Analyze targets to split into graph and node targets
         self.graph_targets = []
         self.node_targets = []
 
-        # Heuristic: Check first sample
-        self.has_graph_targets = False
-        self.has_node_targets = False
-        self.graph_indices = []
-        self.node_indices = []
+        self.has_graph_targets = graph_targets is not None
+        self.has_node_targets = node_targets is not None
 
-        if len(targets) > 0:
-            sample = targets[0]
-            # If standard numpy array (all graph tasks)
-            if isinstance(sample, np.ndarray) and sample.ndim == 1 and not isinstance(sample[0], (list, np.ndarray)):
-                 pass # Will handle later as pure graph
-
-            # If list/array of mixed types (object array or list of lists)
-            n_tasks = len(sample)
-
-            for i in range(n_tasks):
-                elem = sample[i]
-                if isinstance(elem, (list, np.ndarray)):
-                    self.node_indices.append(i)
-                else:
-                    self.graph_indices.append(i)
-
-            self.has_node_targets = len(self.node_indices) > 0
-            self.has_graph_targets = len(self.graph_indices) > 0 or (not self.has_node_targets)
-
-        # Process Graphs
         for i, smiles in enumerate(smiles_list):
             graph = smiles_to_graph(smiles, use_explicit_hydrogens=False, use_stereochemistry=True)
-            if graph is not None:
-                #Add positional encoding for GraphGPS, stored in graph.rwse and graph.rrwp_edge
-                if positional_encoding_kwargs is not None:
-                    walk_length = positional_encoding_kwargs['walk_length']
-                    graph = add_random_walk_positional_encoding(graph, walk_length=walk_length)
-                    graph = add_relative_random_walk_positional_encoding(graph, walk_length=walk_length)
+            if graph is None:
+                print(f"Warning: Invalid SMILES at idx {i}: {smiles}. Skipping.")
+                continue
 
-                self.graphs.append(graph)
+            # Add positional encoding
+            if positional_encoding_kwargs is not None:
+                walk_length = positional_encoding_kwargs['walk_length']
+                graph = add_random_walk_positional_encoding(graph, walk_length=walk_length)
+                graph = add_relative_random_walk_positional_encoding(graph, walk_length=walk_length)
 
-                # Process Targets
-                if len(targets) == 0:
-                    continue
-                t = targets[i]
+            current_g_t = None
+            current_n_t = None
 
-                # --- VALIDATION START ---
-                # Check atom consistency if node targets exist
-                consistent = True
-                if self.has_node_targets:
-                    # Determine node target parts
-                    if self.has_graph_targets:
-                         n_t = [t[k] for k in self.node_indices]
-                    else:
-                         n_t = [t] if not isinstance(t, (list, np.ndarray)) or len(self.node_indices)<=1 else t
-                         if isinstance(n_t, (list, np.ndarray)) and isinstance(n_t[0], (list, np.ndarray))==False:
-                              n_t = [n_t] # Wrap single array
+            if self.has_graph_targets:
+                 current_g_t = torch.tensor(graph_targets[i], dtype=torch.float)
 
-                    # Check first part (assuming all parts aligned)
-                    # n_t is list of arrays/lists
-                    for part in n_t:
-                        if isinstance(part, (list, np.ndarray)):
-                             if len(part) != graph.num_nodes:
-                                 print(f"Warning: Discarding molecule idx {i} (SMILES: {smiles}). "
-                                       f"Node count ({graph.num_nodes}) != Target length ({len(part)}).")
-                                 self.graphs.pop() # Remove graph added above
-                                 consistent = False
-                                 break
+            if self.has_node_targets:
+                 n_t = node_targets[i]
+                 # Handle object array wrapping
+                 if isinstance(n_t, np.ndarray) and n_t.dtype == object:
+                     if n_t.size == 1:
+                         n_t = n_t.item()
+                     else:
+                         n_t = n_t.tolist()
 
-                if not consistent:
-                    continue
-                # --- VALIDATION END ---
+                 # Check consistency
+                 if hasattr(n_t, '__len__') and len(n_t) != graph.num_nodes:
+                     print(f"Warning: Discarding molecule idx {i} (SMILES: {smiles}). "
+                           f"Node count ({graph.num_nodes}) != Target length ({len(n_t)}).")
+                     continue
 
-                if self.has_node_targets and self.has_graph_targets:
-                    # Mixed case
-                     g_t = [t[k] for k in self.graph_indices]
-                     n_t = [t[k] for k in self.node_indices]
+                 current_n_t = torch.tensor(n_t, dtype=torch.float)
+                 if current_n_t.ndim == 1: current_n_t = current_n_t.unsqueeze(1)
 
-                     self.graph_targets.append(torch.tensor(g_t, dtype=torch.float))
-                     # Node targets are list of arrays, stack them column-wise
-                     # n_t is list of [array(atoms), array(atoms)]
-                     # We need (atoms, tasks)
-                     # Check alignment
-                     stacked_n = np.column_stack(n_t)
-                     self.node_targets.append(torch.tensor(stacked_n, dtype=torch.float))
-
-                elif self.has_node_targets:
-                    # Only node targets
-                    # t is list of arrays, or just array
-                    if isinstance(t, (list, np.ndarray)) and len(self.node_indices) > 1:
-                        stacked_n = np.column_stack(t)
-                        self.node_targets.append(torch.tensor(stacked_n, dtype=torch.float))
-                    elif isinstance(t, (list, np.ndarray)) and len(self.node_indices) == 1:
-                         # Single node task, might be wrapped or not
-                         if isinstance(t[0], (list, np.ndarray)):
-                             val = t[0]
-                         else:
-                             val = t # It is the array itself
-                         self.node_targets.append(torch.tensor(val, dtype=torch.float).unsqueeze(1))
-                    else:
-                         # fallback
-                         self.node_targets.append(torch.tensor(t, dtype=torch.float))
-
-                else:
-                    # Only graph targets
-                     self.graph_targets.append(t)
+            # If validated, append
+            self.graphs.append(graph)
+            if self.has_graph_targets:
+                self.graph_targets.append(current_g_t)
+            if self.has_node_targets:
+                self.node_targets.append(current_n_t)
 
         # Finalize storage
-        if self.has_graph_targets:
-            try:
-                self.graph_targets = torch.tensor(self.graph_targets, dtype=torch.float)
-            except:
-                 self.graph_targets = torch.tensor(np.array(self.graph_targets), dtype=torch.float)
+        if self.has_graph_targets and len(self.graph_targets) > 0:
+            self.graph_targets = torch.stack(self.graph_targets)
 
     def __len__(self):
         return len(self.graphs)
@@ -158,25 +96,17 @@ class MoleculeDataset(Dataset):
     def __getitem__(self, idx):
         data = self.graphs[idx].clone()
 
-        # Determine what goes into data.y (primary target)
-        if self.has_graph_targets and self.has_node_targets:
-             # Mixed mode: y is graph, node_y is node
+        if self.has_graph_targets:
              y = self.graph_targets[idx]
              if y.ndim == 0: y = y.unsqueeze(0)
              if y.ndim == 1: y = y.unsqueeze(0)
              data.y = y
+
+        if self.has_node_targets:
              data.node_y = self.node_targets[idx]
-
-        elif self.has_graph_targets:
-             # Graph only
-             y = self.graph_targets[idx]
-             if y.ndim == 0: y = y.unsqueeze(0)
-             if y.ndim == 1: y = y.unsqueeze(0)
-             data.y = y
-
-        elif self.has_node_targets:
-             # Node only -> treat as primary y
-             data.y = self.node_targets[idx]
+             # If no graph targets, use node targets as primary y (e.g. for loss functions expecting data.y)
+             if not self.has_graph_targets:
+                 data.y = data.node_y
 
         return data
 
@@ -185,134 +115,138 @@ def collate_fn(batch):
     return Batch.from_data_list(batch)
 
 def create_dataloaders(smiles_list,
-                       targets,
                        train_idx,
                        val_idx,
                        test_idx,
                        batch_size=64,
                        num_workers=8,
-                       scaler_path='checkpoints/scaler.pkl',
-                       positional_encoding_kwargs=None, **kwargs):
+                       scaler_path=None,
+                       positional_encoding_kwargs=None,
+                       node_targets=None,
+                       graph_targets=None,
+                       **kwargs):
     '''
     Create dataloaders for training, validation, and testing. and scale targets using StandardScaler.
     '''
+    if train_idx is None or val_idx is None or test_idx is None:
+         raise ValueError("train_idx, val_idx, and test_idx must be provided.")
+
     smiles_train = smiles_list[train_idx]
     smiles_val = smiles_list[val_idx]
     smiles_test = smiles_list[test_idx]
 
-    y_train = targets[train_idx]
-    y_val = targets[val_idx]
-    y_test = targets[test_idx]
+    gt_train = None; gt_val = None; gt_test = None
+    nt_train = None; nt_val = None; nt_test = None
 
-    # Analyze structure of targets from first sample
-    sample = y_train[0]
-    graph_indices = []
-    node_indices = []
-
-    # Check if this is a mixed/complex target list (object array or list of mixed types)
-    is_mixed = False
-    if isinstance(sample, (list, np.ndarray)) and (isinstance(sample[0], (list, np.ndarray)) or any(isinstance(x, (list, np.ndarray)) for x in sample)):
-         is_mixed = True
-         n_tasks = len(sample)
-         for i in range(n_tasks):
-             if isinstance(sample[i], (list, np.ndarray)):
-                 node_indices.append(i)
-             else:
-                 graph_indices.append(i)
-
-    # If not mixed, check if it is purely atom-wise (one task, but variable length)
-    is_pure_atom_wise = False
-    if not is_mixed:
-         if isinstance(sample, (list, np.ndarray)):
-             # Could be graph targets (if fixed length) or atom targets (if variable)
-             # We assume if it's a list/array but not mixed, it's either all graph or all node
-             # Use stack check
-             try:
-                 np.stack(y_train)
-                 # If stackable, treated as graph targets unless strictly one column and variable len
-             except ValueError:
-                 is_pure_atom_wise = True
-
+    graph_scaler = None
+    node_scaler = None
     scaler = None
 
-    if is_mixed:
-        graph_scaler = StandardScaler() if graph_indices else None
-        node_scaler = StandardScaler() if node_indices else None
+    # Graph Targets
+    if graph_targets is not None:
+         g_train_orig = graph_targets[train_idx]
+         g_val_orig = graph_targets[val_idx]
+         g_test_orig = graph_targets[test_idx]
 
-        # Process Graph Targets
-        if graph_indices:
-            # Extract
-            g_train = np.array([[y[i] for i in graph_indices] for y in y_train])
-            graph_scaler.fit(g_train)
+         graph_scaler = StandardScaler()
+         # Reshape if needed
+         if hasattr(g_train_orig, 'ndim') and g_train_orig.ndim == 1:
+              g_train_orig = g_train_orig.reshape(-1, 1)
+              g_val_orig = g_val_orig.reshape(-1, 1)
+              g_test_orig = g_test_orig.reshape(-1, 1)
 
-        # Process Node Targets
-        if node_indices:
-            # Extract and Flatten
-            n_train_flat = []
-            for y in y_train:
-                for i in node_indices:
-                    n_train_flat.extend(y[i])
-            n_train_flat = np.array(n_train_flat).reshape(-1, 1)
-            node_scaler.fit(n_train_flat)
+         # If list, convert to array and reshape
+         elif isinstance(g_train_orig, list):
+              g_train_orig = np.array(g_train_orig)
+              if g_train_orig.ndim == 1: g_train_orig = g_train_orig.reshape(-1, 1)
+              # Also fix val/test if list
+              g_val_orig = np.array(g_val_orig)
+              if g_val_orig.ndim == 1: g_val_orig = g_val_orig.reshape(-1, 1)
+              g_test_orig = np.array(g_test_orig)
+              if g_test_orig.ndim == 1: g_test_orig = g_test_orig.reshape(-1, 1)
 
+         gt_train = graph_scaler.fit_transform(g_train_orig)
+         gt_val = graph_scaler.transform(g_val_orig)
+         gt_test = graph_scaler.transform(g_test_orig)
+
+    # Node Targets
+    if node_targets is not None:
+         n_train_orig = [node_targets[i] for i in train_idx]
+         n_val_orig = [node_targets[i] for i in val_idx]
+         n_test_orig = [node_targets[i] for i in test_idx]
+
+         node_scaler = StandardScaler()
+
+         # Helper to unwrap possible object arrays
+         def start_unwrap(x):
+             if isinstance(x, np.ndarray) and x.dtype==object and x.size==1:
+                 return x.item()
+             return x
+
+         # Collect all training node data to fit scaler
+         all_train_vals = []
+
+         # Determine if multitask based on first sample
+         sample = start_unwrap(n_train_orig[0])
+         is_multitask = False
+         if isinstance(sample, (list, np.ndarray)):
+              if len(sample) > 0 and isinstance(sample[0], (list, np.ndarray)):
+                    is_multitask = True # List of lists/arrays
+
+         if is_multitask:
+              # Stack them
+              for x in n_train_orig:
+                  u = start_unwrap(x)
+                  if isinstance(u, list): u = np.column_stack(u)
+                  # if u is already array (atoms, tasks), fine.
+                  all_train_vals.append(u)
+
+              if len(all_train_vals) > 0:
+                   node_scaler.fit(np.vstack(all_train_vals))
+         else:
+              # Single task per atom
+              for x in n_train_orig:
+                   u = start_unwrap(x)
+                   all_train_vals.extend(np.array(u).flatten())
+              node_scaler.fit(np.array(all_train_vals).reshape(-1, 1))
+
+         # Transform
+         def transform_nodes(data, s, is_mt):
+             res = []
+             for x in data:
+                 u = start_unwrap(x)
+                 if is_mt:
+                     if isinstance(u, list): u = np.column_stack(u)
+                     val = s.transform(u)
+                     res.append(val)
+                 else:
+                     u_arr = np.array(u).reshape(-1, 1)
+                     val = s.transform(u_arr).flatten()
+                     res.append(val)
+             return res
+
+         nt_train = transform_nodes(n_train_orig, node_scaler, is_multitask)
+         nt_val = transform_nodes(n_val_orig, node_scaler, is_multitask)
+         nt_test = transform_nodes(n_test_orig, node_scaler, is_multitask)
+
+    if graph_scaler and node_scaler:
         scaler = DualScaler(graph_scaler, node_scaler)
+    elif graph_scaler:
+        scaler = graph_scaler
+    elif node_scaler:
+        scaler = node_scaler
 
-        def transform_mixed(y_data, s):
-            new_y = []
-            for y in y_data:
-                res = [None] * len(y)
-                # Transform graph parts
-                if s.graph_scaler:
-                    g_part = np.array([y[i] for i in graph_indices]).reshape(1, -1)
-                    g_trans = s.graph_scaler.transform(g_part)[0]
-                    for idx, val in zip(graph_indices, g_trans):
-                        res[idx] = val
-
-                # Transform node parts
-                if s.node_scaler:
-                    for i in node_indices:
-                         val = np.array(y[i]).reshape(-1, 1)
-                         res[i] = s.node_scaler.transform(val).flatten()
-                new_y.append(res)
-            return new_y
-
-        y_train = transform_mixed(y_train, scaler)
-        y_val = transform_mixed(y_val, scaler)
-        y_test = transform_mixed(y_test, scaler)
-
-    elif is_pure_atom_wise:
-        scaler = StandardScaler()
-        y_train_flat = np.concatenate(y_train).reshape(-1, 1)
-        scaler.fit(y_train_flat)
-
-        y_train = [scaler.transform(np.array(y).reshape(-1, 1)).flatten() for y in y_train]
-        y_val = [scaler.transform(np.array(y).reshape(-1, 1)).flatten() for y in y_val]
-        y_test = [scaler.transform(np.array(y).reshape(-1, 1)).flatten() for y in y_test]
-
-    else:
-        # Standard Graph Targets
-        scaler = StandardScaler()
-        if y_train.ndim == 1:
-             y_train = y_train.reshape(-1, 1)
-             y_val = y_val.reshape(-1, 1)
-             y_test = y_test.reshape(-1, 1)
-
-        y_train = scaler.fit_transform(y_train)
-        y_val = scaler.transform(y_val)
-        y_test = scaler.transform(y_test)
-
-    if scaler_path:
+    if scaler_path and scaler:
         joblib.dump(scaler, scaler_path)
 
-    train_dataset = MoleculeDataset(smiles_train, y_train, positional_encoding_kwargs=positional_encoding_kwargs)
-    val_dataset = MoleculeDataset(smiles_val, y_val, positional_encoding_kwargs=positional_encoding_kwargs)
-    test_dataset = MoleculeDataset(smiles_test, y_test, positional_encoding_kwargs=positional_encoding_kwargs)
+    # Create datasets
+    train_dataset = MoleculeDataset(smiles_train, node_targets=nt_train, graph_targets=gt_train, positional_encoding_kwargs=positional_encoding_kwargs)
+    val_dataset = MoleculeDataset(smiles_val, node_targets=nt_val, graph_targets=gt_val, positional_encoding_kwargs=positional_encoding_kwargs)
+    test_dataset = MoleculeDataset(smiles_test, node_targets=nt_test, graph_targets=gt_test, positional_encoding_kwargs=positional_encoding_kwargs)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True,
-                              collate_fn=collate_fn, num_workers=num_workers)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size,
-                            collate_fn=collate_fn, num_workers=num_workers)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size,
-                             collate_fn=collate_fn, num_workers=num_workers)
+    # Loaders
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=collate_fn, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, collate_fn=collate_fn, num_workers=num_workers)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, collate_fn=collate_fn, num_workers=num_workers)
 
     return train_loader, val_loader, test_loader, scaler

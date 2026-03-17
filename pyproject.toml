@@ -17,7 +17,8 @@ dependencies = [
     "torch==2.5.1",
     "torchvision==0.20.1",
     "torch-geometric==2.7.0",
-    "optuna==4.7.0"
+    "optuna==4.7.0",
+    "pytest==9.0.2"
 ]
 
 [tool.setuptools.packages.find]
