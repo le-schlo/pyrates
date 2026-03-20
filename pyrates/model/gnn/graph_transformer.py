@@ -7,7 +7,6 @@ from torch_geometric.nn import TransformerConv, global_add_pool
 class BaseGraphTransformer(nn.Module):
     """
     Graph Transformer Network.
-    More powerful attention mechanism than GAT, natively supporting edge features.
     """
     def __init__(self, node_features, edge_features, hidden_size, num_heads=4, depth=3, dropout=0.1, **kwargs):
         super(BaseGraphTransformer, self).__init__()

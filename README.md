@@ -55,8 +55,9 @@ Supports various graph encoder architectures, selectable via the `encoder_type` 
 - **GAT (`gat`)**: Graph Attention Network with edge features.
 - **MPNN (`mpnn`)**: Standard Message Passing Neural Network with GRU.
 - **GIN (`gin`)**: Graph Isomorphism Network (GINEConv).
-- **Graph Transformer (`transformer`)**: Native Graph Transformer.
-- **Transformer_v2 (`transformer_v2`)**: Advanced Graph Transformer with architectural improvements like residual connections, normalization and FFN.
+- **Graph Transformer (`graph_transformer`)**:
+  - Basic Graph Transformer (`base_transformer`): Base Transformer
+  - Advanced Graph Transformer (`transformer` or `transformer_v2` (for legacy)): Improvements over base transformer like residual connections, normalization and FFN.
 - **Graph GPS (`gps`)**: Graph GPS (General, Powerful, Scalable) combines local MPNN (GINEConv) with global attention mechanisms (Transformer/Performer). Utilizes Random Walk Structural Encoding (RWSE) for node-level positional information and Relative Random Walk Positional encoding (RRWP) for edge-level features, providing enhanced structural awareness for molecular property prediction.
 
 ### Mixture Density Network (`pyrates.model.ffn.mixture_density_network`)
