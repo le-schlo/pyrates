@@ -3,7 +3,7 @@
 Framework for predicting properties of excited states.
 
 <p align="center">
-  <img src="image/pyrates_cover.png" alt="pyrates architecture" width="60%" />
+  <img src="image/pyRates_cover.png" alt="pyRates architecture" width="60%" />
 </p>
 
 ## Installation
