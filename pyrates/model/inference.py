@@ -94,8 +94,9 @@ def predict(model, loader, device, scaler, mode='mixture_mean'):
 
 def get_predictions(smiles: list,
                     model_path: Path = Path(
-                        '/tmp/pyrates/playground/model_setup/save_model_and_inspect/new_data/graph_gps/new_loss'),
-                    device='cpu'
+                        '/tmp/pyrates/playground/model_setup/save_model_and_inspect/new_data/graph_gps/new_loss/checkpoints/model.pt'),
+                    device='cpu',
+                    task: str = 'graph', #other options are node or all
                     ):
     '''
     Function to get predictions from a trained model.
@@ -104,11 +105,14 @@ def get_predictions(smiles: list,
     :param model_path: Path to the directory containing the trained model checkpoint (should contain 'checkpoints/model.pt').
     :param device: Device to run the model on (e.g., 'cpu' or 'cuda:0').
     :return: Tuple containing predictions, uncertainties, mode weights, and MDN parameters (mu, sigma, pi).
+    :param task: Prediction task - 'graph', 'node', or 'all' (default: 'graph').
     '''
 
     BATCH_SIZE = 48
-
-    checkpoint = torch.load(str(model_path / 'checkpoints' / 'model.pt'))
+    if device == 'cpu':
+        checkpoint = torch.load(model_path, map_location='cpu')
+    else:
+        checkpoint = torch.load(str(model_path))
     encoder_args = checkpoint['model_config']['encoder_args'] if 'encoder_args' in checkpoint['model_config'] else {}
 
     model = GraphMDN(
@@ -131,12 +135,22 @@ def get_predictions(smiles: list,
     )
 
     print(f"Loading {len(smiles)} molecules for prediction")
-    test_dataset = MoleculeDataset(smiles, positional_encoding_kwargs=checkpoint['model_config'])
-    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
-    sample_batch = next(iter(test_loader))
+    if len(smiles) == 1: #Workaround for lazy initialization
+        init_smiles = smiles.copy()
+        init_smiles.append(smiles[0]) #Duplicate the single SMILES to create a batch of 2
+    else:
+        init_smiles = smiles
+
+    init_dataset = MoleculeDataset(init_smiles, positional_encoding_kwargs=checkpoint['model_config'])
+    init_loader = DataLoader(init_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
+
+    sample_batch = next(iter(init_loader))
     sample_batch = sample_batch.to(device)
     model(sample_batch)
+
+    test_dataset = MoleculeDataset(smiles, positional_encoding_kwargs=checkpoint['model_config'])
+    test_loader = DataLoader(test_dataset, batch_size=BATCH_SIZE, shuffle=False, collate_fn=collate_fn)
 
     model.load_state_dict(checkpoint['model_state_dict'])
     scaler = checkpoint['scaler']
@@ -145,8 +159,11 @@ def get_predictions(smiles: list,
     print(
         f"Loaded model from epoch {checkpoint['epoch']} with val_loss {checkpoint['val_loss']:.4f} and GNN encoder type {checkpoint['model_config']['encoder_type']}")
     prediction_result = predict(model, test_loader, device, scaler)
-    predictions, uncertainties, mode_weights = prediction_result['graph']['predictions'], prediction_result['graph']['uncertainties'], prediction_result['graph']['weights']
-    mu, sigma, pi = prediction_result['graph']['mdn_params']['mu'], prediction_result['graph']['mdn_params']['sigma'], prediction_result['graph']['mdn_params']['pi']
+    if task == 'all':
+        return prediction_result
+
+    predictions, uncertainties, mode_weights = prediction_result[task]['predictions'], prediction_result[task]['uncertainties'], prediction_result[task]['weights']
+    mu, sigma, pi = prediction_result[task]['mdn_params']['mu'], prediction_result[task]['mdn_params']['sigma'], prediction_result[task]['mdn_params']['pi']
 
     return predictions, uncertainties, mode_weights, mu, sigma, pi
 

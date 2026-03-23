@@ -1,29 +1,25 @@
-import io
+import io, base64
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.colors as mcolors
+import plotly.graph_objects as go
 from rdkit import Chem
 from rdkit.Chem.Draw import rdMolDraw2D
 from rdkit.Chem import rdDepictor
 from PIL import Image
-import matplotlib.colors as mcolors
 
-def visualize_density(smiles: str, spin_population: list, uncertainty: list=None, show_image=True, rgb=[0, 64, 128]):
 
-    #-----------Preprocessing-----------
+def _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb):
+    """Shared preprocessing: returns (mol, drawer, hover_texts, atom_xs, atom_ys)"""
     mol = Chem.MolFromSmiles(smiles)
     nh_indices = [a.GetIdx() for a in mol.GetAtoms() if a.GetSymbol() == 'N' and a.GetTotalNumHs() > 0]
-    if len(nh_indices) > 0:
+    if nh_indices:
         mol = Chem.AddHs(mol, onlyOnAtoms=nh_indices)
     rdDepictor.Compute2DCoords(mol)
     num_heavy_atoms = len(spin_population)
 
-    #-----------Map the properties to values-----------
     if uncertainty is not None:
-        atom_colors = {
-            i: uncertainty_to_alpha(uncertainty[i],alpha_max=0.8, uncertainty_factor=2, rgb=rgb)
-            for i in range(num_heavy_atoms)
-        }
-
+        atom_colors = {i: uncertainty_to_alpha(uncertainty[i], rgb=rgb) for i in range(num_heavy_atoms)}
     else:
         atom_colors = {
             i: spin_to_color(spin_population[i], vmin=np.min(spin_population), vmax=np.max(spin_population), rgb=rgb)
@@ -32,8 +28,7 @@ def visualize_density(smiles: str, spin_population: list, uncertainty: list=None
 
     atom_radii = {i: float(1.5 * spin_population[i]) for i in range(num_heavy_atoms)}
 
-    # -----------Draw the molecule-----------
-    drawer, opts = load_acs_style()
+    drawer, _ = load_acs_style()
     draw_opts = {
         "highlightAtoms": list(range(num_heavy_atoms)),
         "highlightAtomColors": atom_colors,
@@ -41,86 +36,126 @@ def visualize_density(smiles: str, spin_population: list, uncertainty: list=None
     }
 
     if uncertainty is not None:
-        sum_spin_population_uncertainty = np.sum(uncertainty)
-        binned_confidence = ['High' if sum_spin_population_uncertainty < 1.0 else 'Medium' if sum_spin_population_uncertainty < 1.5 else 'Low'][0]
-        draw_opts["legend"] = f"{binned_confidence} confidence prediction\nSum uncertainty: {np.round(sum_spin_population_uncertainty, 4)}"
+        total_unc = np.sum(uncertainty)
+        confidence = 'High' if total_unc < 1.0 else 'Medium' if total_unc < 1.5 else 'Low'
+        draw_opts["legend"] = f"{confidence} confidence prediction\nSum uncertainty: {np.round(total_unc, 4)}"
 
     rdMolDraw2D.PrepareAndDrawMolecule(drawer, mol, **draw_opts)
     drawer.FinishDrawing()
+
+    # Atom screen coordinates + hover text
+    atom_xs, atom_ys, hover_texts = [], [], []
+    for i in range(num_heavy_atoms):
+        pt = drawer.GetDrawCoords(i)
+        atom_xs.append(pt.x)
+        atom_ys.append(500 - pt.y)
+        text = f"<b>Atom {i} ({mol.GetAtomWithIdx(i).GetSymbol()})</b><br>Spin density: {spin_population[i]:.4f}"
+        if uncertainty is not None:
+            text += f"<br>Uncertainty: {uncertainty[i]:.4f}"
+        hover_texts.append(text)
+
+    return mol, drawer, atom_xs, atom_ys, hover_texts
+
+
+def _make_colorbar_info(spin_population, uncertainty, rgb):
+    """Returns (colorscale, cmin, cmax, label) for both mpl and plotly."""
+    r, g, b = np.array(rgb) / 255.0
+    cmin, cmax = float(np.min(spin_population)), float(np.max(spin_population))
+    label = 'Uncertainty' if uncertainty is not None else 'Spin density'
+    alpha_start, alpha_end = (0.8, 0.0) if uncertainty is not None else (0.0, 0.8)
+    return r, g, b, cmin, cmax, label, alpha_start, alpha_end
+
+
+def visualize_density(smiles, spin_population, uncertainty=None, show_image=True, rgb=[0, 64, 128]):
+    mol, drawer, *_ = _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb)
+    r, g, b, cmin, cmax, label, alpha_start, alpha_end = _make_colorbar_info(spin_population, uncertainty, rgb)
+
     img = Image.open(io.BytesIO(drawer.GetDrawingText()))
 
-    # -----------Plotting-----------
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.imshow(img)
+    ax.axis("off")
+
+    cmap = mcolors.LinearSegmentedColormap('SpindensityAlpha', {
+        'red':   [(0.0, r, r), (1.0, r, r)],
+        'green': [(0.0, g, g), (1.0, g, g)],
+        'blue':  [(0.0, b, b), (1.0, b, b)],
+        'alpha': [(0.0, alpha_start, alpha_start), (1.0, alpha_end, alpha_end)],
+    })
+
+    sm = plt.cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=cmin, vmax=cmax))
+    sm.set_array([])
+    fig.colorbar(sm, ax=ax, fraction=0.046, pad=0.04).set_label(label)
+    plt.tight_layout()
+
     if show_image:
-        plt.figure(figsize=(6, 5))
-        ax = plt.gca()
-        plt.imshow(img)
-        plt.axis("off")
-        r, g, b = np.array(rgb) / 255.0
-
-        if uncertainty is not None:
-            alpha_start = 0.8
-            alpha_end = 0.0
-        else:
-            alpha_start = 0.0
-            alpha_end = 0.8
-
-        cdict = {
-            'red': [(0.0, r, r), (1.0, r, r)],
-            'green': [(0.0, g, g), (1.0, g, g)],
-            'blue': [(0.0, b, b), (1.0, b, b)],
-            'alpha': [(0.0, alpha_start, alpha_start), (1.0, alpha_end, alpha_end)]
-        }
-
-        cmap = mcolors.LinearSegmentedColormap('SpindensityAlpha', cdict)
-        norm = mcolors.Normalize(vmin=np.min(spin_population), vmax=np.max(spin_population))
-
-        sm = plt.cm.ScalarMappable(cmap=cmap, norm=norm)
-        sm.set_array([])
-
-        cbar = plt.colorbar(sm, ax=ax, fraction=0.046, pad=0.04)
-        if uncertainty is not None:
-            cbar.set_label('Uncertainty')
-        else:
-            cbar.set_label('Spin density')
-
-        plt.tight_layout()
         plt.show()
 
-    return img
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", bbox_inches="tight", dpi=300)
+    plt.close(fig)
+    buf.seek(0)
+    return buf.getvalue()
 
+
+def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb=[0, 64, 128]):
+    mol, drawer, atom_xs, atom_ys, hover_texts = _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb)
+    r, g, b, cmin, cmax, label, alpha_start, alpha_end = _make_colorbar_info(spin_population, uncertainty, rgb)
+
+    img_b64 = base64.b64encode(drawer.GetDrawingText()).decode()
+
+    fig = go.Figure()
+
+    fig.add_layout_image(
+        source=f"data:image/png;base64,{img_b64}",
+        x=0, y=500, xref="x", yref="y",
+        sizex=500, sizey=500, sizing="stretch", layer="below"
+    )
+
+    fig.add_trace(go.Scatter(
+        x=atom_xs, y=atom_ys, mode="markers",
+        marker=dict(size=20, opacity=0),
+        hovertemplate="%{text}<extra></extra>",
+        text=hover_texts,
+    ))
+
+    fig.add_trace(go.Scatter(
+        x=[None], y=[None], mode="markers",
+        marker=dict(
+            colorscale=[
+                [0.0, f"rgba({int(r*255)},{int(g*255)},{int(b*255)},{alpha_start})"],
+                [1.0, f"rgba({int(r*255)},{int(g*255)},{int(b*255)},{alpha_end})"],
+            ],
+            cmin=cmin, cmax=cmax, color=[cmin],
+            showscale=True,
+            colorbar=dict(title=label, thickness=15, len=0.75),
+        ),
+        hoverinfo="skip", showlegend=False,
+    ))
+
+    fig.update_layout(
+        xaxis=dict(range=[0, 500], visible=False),
+        yaxis=dict(range=[0, 500], visible=False, scaleanchor="x"),
+        margin=dict(l=0, r=0, t=0, b=0),
+        width=480, height=400,
+        plot_bgcolor="white",
+        hoverlabel=dict(bgcolor="white", font_size=13),
+    )
+
+    return fig
 
 def spin_to_color(value, vmin, vmax, rgb=[0, 64, 128]):
-    '''
-    Transforms spin value into color values for visualization.
-    '''
-    norm = (value - vmin) / (vmax - vmin)
-    norm = max(0, min(0.8, norm))
-    rgb_transformed = np.array(rgb)/255.0
-    return_value = np.append(rgb_transformed, norm)
-    return tuple(return_value.tolist())
+    norm = max(0, min(0.8, (value - vmin) / (vmax - vmin)))
+    return tuple(np.append(np.array(rgb) / 255.0, norm).tolist())
 
 
 def uncertainty_to_alpha(value, alpha_max=0.8, uncertainty_factor=2, rgb=[0, 64, 128]):
-    '''
-    Transforms uncertainty values into alpha values for visualization. Higher uncertainty results in lower alpha (more transparent).
-    :param value: Value to transform
-    :param alpha_max: Maximum alpha value to use
-    :param uncertainty_factor: Factor to control how quickly alpha decreases with increasing uncertainty. Higher values will make alpha decrease more rapidly.
-    :param rgb: Color scale
-    :return: Transformed value
-    '''
-    alpha = alpha_max-(uncertainty_factor*value)
-    rgb_transformed = np.array(rgb) / 255.0
-    return_value = np.append(rgb_transformed, alpha)
-    return tuple(return_value.tolist())
+    return tuple(np.append(np.array(rgb) / 255.0, alpha_max - uncertainty_factor * value).tolist())
+
 
 def load_acs_style():
-    '''
-    Draw ACS Sytle in RDKit
-    '''
     drawer = rdMolDraw2D.MolDraw2DCairo(500, 500)
     opts = drawer.drawOptions()
-
     opts.useBWAtomPalette()
     opts.backgroundColour = (1, 1, 1)
     opts.bondLineWidth = 3.0

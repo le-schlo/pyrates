@@ -1,0 +1,85 @@
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Iterable, Dict
+import pandas as pd
+from pyrates.model.inference import get_predictions
+import importlib.resources as ir
+import numpy as np
+
+def collect_results(smiles: list):
+    """Collect prediction values"""
+
+    output = get_predictions(smiles, model_path=Path(str(ir.files("pyrates.webapp.data").joinpath("model.pt"))), device='cpu', task='all')
+    graph_output = output['graph']
+    node_output = output['node']
+
+    return graph_output, node_output
+
+
+def predict_stub(smiles_list: Iterable[str]) -> pd.DataFrame:
+    """Stub prediction function to be replaced by real ML models.
+
+    Returns a DataFrame with columns (base unit: kcal/mol):
+      - smiles
+      - triplet_energy_adiabatic        (in kcal/mol, constrained to [30, 75])
+      - lamda_S_T                        (in kcal/mol)
+      - lamda_T_S                        (in kcal/mol)
+      - spin_map                         (dict: atom_idx -> spin density) [internal usage, hidden in table]
+    """
+
+    graph_output, node_output = collect_results(smiles_list)
+
+
+    graph_predictions, graph_uncertainties = graph_output['predictions'], graph_output['uncertainties']
+    g_mu, g_sigma, g_pi = graph_output['mdn_params']['mu'], graph_output['mdn_params']['sigma'], graph_output['mdn_params']['pi']
+    node_predictions, node_uncertainties = node_output['predictions'], node_output['uncertainties']
+    n_mu, n_sigma, n_pi = node_output['mdn_params']['mu'], node_output['mdn_params']['sigma'], node_output['mdn_params']['pi']
+
+
+    if len(smiles_list) == 1:
+        node_predictions = [node_predictions]
+        node_uncertainties = [node_uncertainties]
+    rows = []
+    for i, smiles in enumerate(smiles_list):
+        rows.append(
+            {
+                "smiles": smiles,
+                "triplet_energy_adiabatic": graph_predictions[i,0],
+                "triplet_energy_adiabatic_uncertainty": graph_uncertainties[i,0],
+                "triplet_energy_adiabatic_mdn_mu": g_mu[i,0,:].tolist(),
+                "triplet_energy_adiabatic_mdn_sigma": g_sigma[i,0,:].tolist(),
+                "triplet_energy_adiabatic_mdn_pi": g_pi[i,0,:].tolist(),
+                "lamda_S_T": graph_predictions[i,1],
+                "lamda_S_T_uncertainty": graph_uncertainties[i,1],
+                "lamda_S_T_mdn_mu": g_mu[i,1,:].tolist(),
+                "lamda_S_T_mdn_sigma": g_sigma[i,1,:].tolist(),
+                "lamda_S_T_mdn_pi": g_pi[i,1,:].tolist(),
+                "lamda_T_S": graph_predictions[i,2],
+                "lamda_T_S_uncertainty": graph_uncertainties[i,2],
+                "lamda_T_S_mdn_mu": g_mu[i,2,:].tolist(),
+                "lamda_T_S_mdn_sigma": g_sigma[i,2,:].tolist(),
+                "lamda_T_S_mdn_pi": g_pi[i,2,:].tolist(),
+                "spin_map": np.array(node_predictions[i]).flatten().tolist(),
+                "spin_map_uncertainty": np.array(node_uncertainties[i]).flatten().tolist(),
+                "spin_map_mdn_mu": np.array(node_predictions[i]).flatten().tolist(),
+                "spin_map_mdn_sigma": np.array(node_predictions[i]).flatten().tolist(),
+                "spin_map_mdn_pi": np.array(node_predictions[i]).flatten().tolist(),
+            }
+        )
+
+    df = pd.DataFrame(rows)
+
+    return df
+
+
+def reset_results():
+    """Helper to clear session-state results."""
+    try:
+        import streamlit as st
+
+        for k in ["smiles_list", "results_df", "last_run_ts"]:
+            if k in st.session_state:
+                del st.session_state[k]
+    except Exception:
+        pass

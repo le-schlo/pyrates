@@ -114,3 +114,53 @@ def plot_mode_distribution(
 
     plt.show()
 
+def plot_mode_distribution_single(
+    mu: np.ndarray,
+    sigma: np.ndarray,
+    pi: np.ndarray,
+    predicted_value: float,
+    uncertainty: float,
+    target_name: str,
+    unit: str,
+    target_value: float = None,
+):
+    fig, ax = plt.subplots(figsize=(5, 3))
+    cmap = plt.get_cmap("viridis")
+
+    mu_mol = np.array(mu)
+    sigma_mol = np.array(sigma)
+    pi_mol = np.array(pi)
+    n_components = len(mu_mol)
+
+    x_min = min(mu_mol - 4 * sigma_mol)
+    x_max = max(mu_mol + 4 * sigma_mol)
+    x_range = np.linspace(x_min, x_max, 1000)
+
+    for i in np.argsort(pi_mol):
+        color_val = (pi_mol[i] - pi_mol.min()) / (pi_mol.max() - pi_mol.min() + 1e-8)
+        y = norm.pdf(x_range, mu_mol[i], sigma_mol[i]) * pi_mol[i]
+        ax.fill_between(x_range, y, alpha=0.5, color=cmap(color_val), label=f'Mode {i+1} (π={pi_mol[i]:.2f})')
+
+    y_combined = np.sum([norm.pdf(x_range, mu_mol[i], sigma_mol[i]) * pi_mol[i] for i in range(n_components)], axis=0)
+    ax.plot(x_range, y_combined, color='black', linestyle='--', linewidth=1.5, label='Combined PDF')
+
+    if target_value is not None:
+        ax.axvline(target_value, color='red', linewidth=1.5, label=f'True: {target_value:.2f}')
+
+    ax.axvline(predicted_value, color='green', linestyle='--', linewidth=1.5, label=f'Predicted: {predicted_value:.2f}')
+
+    lower, upper = predicted_value - uncertainty, predicted_value + uncertainty
+    ax.axvline(lower, color='green', linestyle=':', linewidth=1)
+    ax.axvline(upper, color='green', linestyle=':', linewidth=1)
+    y_lim = ax.get_ylim()
+    ax.fill_betweenx(y_lim, lower, upper, color='green', alpha=0.15, label=f'±{uncertainty:.2f}')
+    ax.set_ylim(y_lim)
+
+    ax.set_title(target_name)
+    ax.set_xlabel(f'Value [{unit}]')
+    ax.set_ylabel('Density')
+    ax.legend(fontsize=7)
+    ax.grid(True, linestyle='--', linewidth=0.5)
+    fig.tight_layout()
+
+    return fig
