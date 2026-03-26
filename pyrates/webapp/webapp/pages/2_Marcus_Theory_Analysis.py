@@ -3,10 +3,10 @@ from __future__ import annotations
 import pandas as pd
 import streamlit as st
 
-from pyrates.webapp.design import apply_global_styles
-from pyrates.science_utils.units import SUPPORTED_UNITS, convert_energy
-from pyrates.model.photocatalysts import get_photocatalyst_row, list_photocatalyst_names
-from pyrates.science_utils import marcus_theory
+from pyrates.webapp.webapp.design import apply_global_styles
+from pyrates.webapp.science_utils.units import SUPPORTED_UNITS, convert_energy
+from pyrates.webapp.science_utils import marcus_theory
+from pyrates.webapp.science_utils.photocatalysts import get_photocatalyst_row, list_photocatalyst_names
 
 DEFAULT_DISPLAY_UNIT = "kcal/mol"
 BASE_QUENCHER_UNIT = "kcal/mol"      # ML predictions base unit (per user)

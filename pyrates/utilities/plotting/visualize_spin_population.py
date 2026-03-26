@@ -117,6 +117,7 @@ def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb
         marker=dict(size=20, opacity=0),
         hovertemplate="%{text}<extra></extra>",
         text=hover_texts,
+        showlegend=False
     ))
 
     fig.add_trace(go.Scatter(

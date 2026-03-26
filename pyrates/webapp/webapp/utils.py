@@ -45,7 +45,7 @@ def init_dependencies() -> Dict[str, Any]:
     return deps
 
 
-def render_molecule_drawer() -> Optional[Any]:
+def render_molecule_drawer(molecule) -> Optional[Any]:
     """Render the molecule drawer if available; return raw representation or None.
 
     This function uses cached dependency info; if missing, it initializes once.
@@ -54,7 +54,10 @@ def render_molecule_drawer() -> Optional[Any]:
     drawer = deps.get("st_ketcher")
     if callable(drawer):
         drawer_fn: Callable[[], Any] = cast(Callable[[], Any], drawer)
-        return drawer_fn()  # may return SMILES str, MOL block str, or other structure
+        if molecule:
+            return drawer_fn(molecule)  # may return SMILES str, MOL block str, or other structure
+        else:
+            return drawer_fn()
     else:
         st.info("Molecule drawer not available. Install 'streamlit-ketcher' to enable drawing.")
         return None

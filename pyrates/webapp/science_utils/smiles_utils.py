@@ -20,3 +20,7 @@ def canonicalize_smiles(smiles: str) -> Optional[str]:
     if mol is None:
         return None
     return Chem.MolToSmiles(mol)
+
+def kekulize_smiles(smiles: str) -> Optional[str]:
+    mol = Chem.MolFromSmiles(smiles)
+    return Chem.MolToSmiles(mol, kekuleSmiles=True) if mol else None

@@ -7,7 +7,7 @@ from pyrates.webapp.webapp.design import apply_global_styles
 from pyrates.webapp.webapp.spin_viz import render_spin_distribution
 from pyrates.webapp.science_utils.units import convert_energy, SUPPORTED_UNITS
 from pyrates.webapp.science_utils.photocatalysts import list_photocatalyst_names, get_photocatalyst_row
-from pyrates.utilities.plotting.plot_modes import plot_mode_distribution, plot_mode_distribution_single
+from pyrates.utilities.plotting.plot_modes import plot_mode_distribution_single
 
 BASE_UNIT = "kcal/mol"  # underlying values returned by the stub (per user)
 DEFAULT_DISPLAY_UNIT = "kcal/mol"
@@ -32,12 +32,23 @@ def _convert_row_values(row: pd.Series, to_unit: str) -> dict:
 
 def _make_display_df(df: pd.DataFrame, to_unit: str) -> pd.DataFrame:
     conv = df.apply(lambda r: _convert_row_values(r, to_unit), axis=1, result_type="expand")
-    # Use explicit assign to avoid any optional typing inference on DataFrame copy
-    return df.assign(
-        triplet_energy_adiabatic=conv["triplet_energy_adiabatic"],
-        lamda_S_T=conv["lamda_S_T"],
-        lamda_T_S=conv["lamda_T_S"],
-    )
+    cols_to_keep = [c for c in df.columns if c not in conv.columns]
+    difference_df = df[cols_to_keep]
+    final_df = pd.concat([difference_df, conv], axis=1, sort=False)
+
+    ordered_cols = []
+    if "smiles" in final_df.columns:
+        ordered_cols.append("smiles")
+    ordered_cols.extend(list(conv.columns))
+    spin_keywords = ["spin_map"]
+    remaining_cols = [
+        c for c in final_df.columns
+        if c not in ordered_cols and not any(k in c for k in spin_keywords)
+    ]
+    ordered_cols.extend(remaining_cols)
+    spin_cols = [c for c in final_df.columns if any(k in c for k in spin_keywords)]
+    ordered_cols.extend(spin_cols)
+    return final_df[ordered_cols]
 
 
 def _unit_selector() -> str:
@@ -99,7 +110,7 @@ def _show_single_result(df: pd.DataFrame, unit: str):
         render_spin_distribution(row["smiles"],row["spin_map"], row["spin_map_uncertainty"], title="Spin distribution")
 
     with st.expander("Details", expanded=False):
-        disp = _make_display_df(df, unit).drop(columns=[c for c in ["spin_map"] if c in df.columns])
+        disp = _make_display_df(df, unit).drop(columns=[c for c in [] if c in df.columns])
         st.dataframe(disp, width="stretch")
 
 

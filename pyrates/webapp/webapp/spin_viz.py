@@ -11,17 +11,20 @@ from pyrates.utilities.plotting.visualize_spin_population import visualize_densi
 def render_spin_distribution(smiles: str, spin_population: list, uncertainty, title: Optional[str] = None):
     """Render a modal-like view of the spin distribution.
     """
-    #todo: toggle between uncertainty and not!
-    img = visualize_density_interactive(smiles, spin_population, uncertainty)
-
     if title:
         st.subheader(title)
+
+    on = st.toggle("Show uncertainty")
+
+    img_unc = visualize_density_interactive(smiles, spin_population, uncertainty)
+    img = visualize_density_interactive(smiles, spin_population)
 
     if img is None:
         st.info("Could not render molecule.")
         return
 
-    st.plotly_chart(img, width='content')
-
-    st.caption("Orange shading for atoms with spin density > 0.25; top-5 heavy atoms are annotated with numeric values.")
+    if on:
+        st.plotly_chart(img_unc, width='content')
+    else:
+        st.plotly_chart(img, width='content')
 

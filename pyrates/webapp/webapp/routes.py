@@ -17,7 +17,7 @@ def collect_results(smiles: list):
     return graph_output, node_output
 
 
-def predict_stub(smiles_list: Iterable[str]) -> pd.DataFrame:
+def predict(smiles_list: Iterable[str]) -> pd.DataFrame:
     """Stub prediction function to be replaced by real ML models.
 
     Returns a DataFrame with columns (base unit: kcal/mol):
