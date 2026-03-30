@@ -4,236 +4,241 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PyRates | EnTdecker 2.0</title>
-    <!-- Avant-garde typography -->
+    <!-- Sleek Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Karla:ital,wght@0,300..800;1,300..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --color-bg: #ecece8;
-            --color-fg: #1a1a1a;
-            --color-accent: #d32f2f;
-            --color-border: #1a1a1a;
+            --bg-body: #020617;
+            --bg-surface: #0f172a;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
+            --border-color: rgba(255, 255, 255, 0.08);
+            --ring-color: #6366f1;
         }
         body {
-            background-color: var(--color-bg);
-            color: var(--color-fg);
-            font-family: 'Karla', sans-serif;
-            overflow-x: hidden;
-            border: 12px solid var(--color-border);
-            min-height: 100vh;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Manrope', sans-serif;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
+            background-image: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
         }
 
-        /* Diagonal brutalist stripes */
-        .stripe-bg {
-            background: repeating-linear-gradient(
-                -45deg,
-                var(--color-bg),
-                var(--color-bg) 10px,
-                #dfdfdb 10px,
-                #dfdfdb 12px
-            );
-        }
-
-        h1, h2, h3, .heading-font {
-            font-family: 'Cinzel Decorative', serif;
-            text-transform: uppercase;
-        }
-
-        h1 {
-            font-size: clamp(3rem, 8vw, 8rem);
-            line-height: 0.85;
-            letter-spacing: -2px;
-            margin: 0;
-            padding: 2rem 0;
-            border-bottom: 4px solid var(--color-border);
+        h1.title {
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 700;
+            background: var(--accent-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
             text-align: center;
-            background: var(--color-accent);
-            color: var(--color-bg);
-            mix-blend-mode: multiply;
+            padding: 3rem 0 2rem 0;
+            margin: 0;
+            letter-spacing: -0.025em;
         }
 
-        .container-hero {
+        .container-main {
             display: grid;
             grid-template-columns: 1fr;
             gap: 2rem;
-            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem 4rem 2rem;
         }
         @media(min-width: 1024px) {
-            .container-hero {
-                grid-template-columns: 3fr 2fr;
-                border-bottom: 2px solid var(--color-border);
+            .container-main {
+                grid-template-columns: 1fr 1fr;
             }
         }
 
-        /* Heavy Brutalist Borders */
-        .brutalist-card {
-            border: 3px solid var(--color-border);
-            background: var(--color-bg);
-            box-shadow: 12px 12px 0 var(--color-border);
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-bottom: 2rem;
-            padding: 0;
+        .glass-panel {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            border-radius: 1.25rem;
+            box-shadow: 0 20px 40px -20px rgba(0,0,0,0.5);
+            overflow: hidden;
             display: flex;
             flex-direction: column;
         }
 
-        .brutalist-header {
-            border-bottom: 3px solid var(--color-border);
-            padding: 1rem 1.5rem;
-            background: var(--color-border);
-            color: var(--color-bg);
-            font-weight: 800;
-            font-size: 1.25rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
+        .panel-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: 600;
+            font-size: 1.125rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .brutalist-body {
-            padding: 2rem;
+        .panel-body {
+            padding: 1.5rem;
         }
 
-        button.btn-brutal {
-            appearance: none;
-            background: var(--color-accent);
-            color: var(--color-bg);
-            border: 3px solid var(--color-border);
-            padding: 1rem 2rem;
-            font-family: 'Karla', sans-serif;
-            font-weight: 800;
-            font-size: 1.2rem;
-            text-transform: uppercase;
+        .btn-sleek {
+            background: var(--accent-gradient);
+            color: #fff;
+            border: none;
+            border-radius: 0.75rem;
+            padding: 0.875rem 1.5rem;
+            font-weight: 600;
+            font-size: 1rem;
             cursor: pointer;
-            box-shadow: 6px 6px 0 var(--color-border);
-            transition: all 0.1s;
-        }
-        button.btn-brutal:active {
-            box-shadow: 2px 2px 0 var(--color-border);
-            transform: translate(4px, 4px);
-        }
-
-        textarea.input-brutal {
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
             width: 100%;
-            height: 150px;
-            background: transparent;
-            border: 3px solid var(--color-border);
-            padding: 1rem;
-            font-family: 'Karla', monospace;
-            font-size: 1.1rem;
-            resize: vertical;
-            outline: none;
         }
-        textarea.input-brutal:focus {
-            background: #fff;
-            box-shadow: inset 4px 4px 0 rgba(0,0,0,0.1);
+        .btn-sleek:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+        .btn-sleek:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 10px rgba(99, 102, 241, 0.3);
         }
 
-        table.brutal-table {
+        .input-sleek {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-color);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            color: var(--text-main);
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+            font-size: 0.95rem;
+            transition: all 0.2s ease;
+            resize: vertical;
+        }
+        .input-sleek:focus {
+            outline: none;
+            border-color: var(--ring-color);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .sleek-table {
             width: 100%;
             border-collapse: collapse;
-            border: 3px solid var(--color-border);
-            margin-top: 2rem;
         }
-        table.brutal-table th {
-            background: var(--color-border);
-            color: var(--color-bg);
-            padding: 1rem;
+        .sleek-table th {
             text-align: left;
-            font-weight: 800;
-            text-transform: uppercase;
-        }
-        table.brutal-table td {
-            border: 2px solid var(--color-border);
             padding: 1rem;
-            font-family: monospace;
-            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.875rem;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .sleek-table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+        .sleek-table tr:hover td {
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .loader-overlay {
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: var(--color-accent);
-            color: var(--color-bg);
+            inset: 0;
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-direction: column;
+            gap: 1rem;
             z-index: 9999;
-            transform: translateY(-100%);
-            transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
         }
         .loader-overlay.active {
-            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .spinner {
+            width: 3rem;
+            height: 3rem;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top-color: #0ea5e9;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
 
         #ketcher-iframe {
             width: 100%;
             height: 500px;
-            border: 3px solid var(--color-border);
-        }
-
-        /* Decorative marks */
-        .deco-number {
-             font-family: 'Cinzel Decorative', serif;
-             font-size: 6rem;
-             opacity: 0.1;
-             position: absolute;
-             top: -20px;
-             right: -20px;
-             pointer-events: none;
+            border: none;
+            background: #fff;
         }
     </style>
 </head>
-<body class="stripe-bg">
+<body>
 
     <div class="loader-overlay" id="loader">
-        <h2 class="text-6xl md:text-9xl blink">COMPUTING...</h2>
+        <div class="spinner"></div>
+        <p class="text-sm font-medium tracking-widest text-[#94a3b8] uppercase">Computing Results</p>
     </div>
 
-    <h1>PyRates / EnTdecker 2.0</h1>
+    <h1 class="title">PyRates / EnTdecker 2.0</h1>
 
-    <div class="container-hero">
+    <div class="container-main">
 
         <!-- Input Section -->
-        <div class="relative">
-            <div class="brutalist-card relative overflow-hidden">
-                <div class="deco-number">01</div>
-                <div class="brutalist-header">Molecular Input</div>
-                <div class="brutalist-body space-y-6">
+        <div class="flex flex-col gap-8">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <svg class="w-5 h-5 text-[#0ea5e9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Molecular Input
+                </div>
+                <div class="panel-body space-y-5">
                     <div>
-                        <label class="block font-bold uppercase mb-2">Input SMILES (batch support)</label>
-                        <textarea id="smiles-input" class="input-brutal" placeholder="e.g. C1=CC=CC=C1&#10;CCO"></textarea>
+                        <label class="block text-sm font-medium text-[var(--text-muted)] mb-2">Input SMILES (batch support)</label>
+                        <textarea id="smiles-input" class="input-sleek" rows="4" placeholder="e.g. C1=CC=CC=C1&#10;CCO"></textarea>
                     </div>
 
-                    <button class="btn-brutal w-full" onclick="runAnalysis()">Analyze Molecule(s)</button>
+                    <button class="btn-sleek" onclick="runAnalysis()">Analyze Molecule(s)</button>
 
-                    <div id="error-box" class="hidden mt-4 p-4 border-3 border-red-600 bg-red-100 text-red-800 font-bold"></div>
+                    <div id="error-box" class="hidden mt-4 p-4 rounded-xl border border-red-500/30 bg-red-500/10 text-red-400 font-medium text-sm"></div>
                 </div>
             </div>
 
-            <!-- Sketcher section. We use an external Ketcher instance by default. -->
-            <div class="brutalist-card">
-                 <div class="brutalist-header" style="background:var(--color-accent);">Sketcher (Ketcher)</div>
-                 <div class="brutalist-body" style="padding: 0;">
-                     <!-- Users can draw molecules here. To retrieve smiles, copy it from ketcher and paste. -->
+            <!-- Sketcher section -->
+            <div class="glass-panel">
+                 <div class="panel-header">
+                     <svg class="w-5 h-5 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                     Sketcher
+                 </div>
+                 <div class="p-0">
                      <iframe id="ketcher-iframe" src="https://lifescience.opensource.epam.com/ketcher/index.html"></iframe>
                  </div>
-                 <div class="p-3 bg-white border-t-3 border-black text-sm uppercase font-bold">
-                     Use Ketcher to draw, then export SMILES and paste it above!
+                 <div class="px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)] text-xs text-[var(--text-muted)]">
+                     Use Ketcher to draw, then export SMILES and paste it above
                  </div>
             </div>
         </div>
 
         <!-- Results Section -->
-        <div>
-            <div class="brutalist-card">
-                <div class="deco-number" style="opacity: 0.05;">02</div>
-                <div class="brutalist-header bg-black text-white">Analysis Results</div>
-                <div class="brutalist-body bg-white stripe-bg" style="min-height: 400px; background: #fff;">
-                    <div id="results-container">
-                        <p class="text-xl font-bold opacity-50">NO DATA YET. AWAITING INPUT.</p>
+        <div class="glass-panel h-max">
+            <div class="panel-header">
+                <svg class="w-5 h-5 text-[#6366f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                Analysis Results
+            </div>
+            <div class="panel-body">
+                <div id="results-container" class="overflow-x-auto">
+                    <div class="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
+                        <svg class="w-12 h-12 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                        <p class="text-sm font-medium">No data yet. Awaiting input.</p>
                     </div>
                 </div>
             </div>
@@ -287,25 +292,29 @@
 
             if (invalid && invalid.length > 0) {
                 const warn = document.createElement('div');
-                warn.className = 'bg-yellow-200 border-2 border-black p-2 mb-4 font-bold';
+                warn.className = 'bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 p-3 rounded-lg mb-6 text-sm font-medium';
                 warn.innerText = 'Ignored invalid SMILES: ' + invalid.join(', ');
                 container.appendChild(warn);
             }
 
             if (!results || results.length === 0) {
-                container.innerHTML += '<p class="text-xl font-bold opacity-50">NO VALID RESULTS.</p>';
+                container.innerHTML = `
+                    <div class="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
+                        <svg class="w-12 h-12 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        <p class="text-sm font-medium">No valid results.</p>
+                    </div>`;
                 return;
             }
 
             const table = document.createElement('table');
-            table.className = 'brutal-table';
+            table.className = 'sleek-table w-full text-left';
 
             // Header
             const thead = document.createElement('thead');
             thead.innerHTML = `
                 <tr>
                     <th>SMILES</th>
-                    <th>E_T (kcal/mol)</th>
+                    <th>E_T <span class="text-xs opacity-50">(kcal/mol)</span></th>
                     <th>λ_S_T</th>
                     <th>λ_T_S</th>
                 </tr>
@@ -317,10 +326,10 @@
             results.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="word-break: break-all;">${row.smiles}</td>
-                    <td>${Number(row.triplet_energy_adiabatic).toFixed(2)}</td>
-                    <td>${Number(row.lamda_S_T).toFixed(2)}</td>
-                    <td>${Number(row.lamda_T_S).toFixed(2)}</td>
+                    <td style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-blue-300 w-1/3">${row.smiles}</td>
+                    <td class="font-medium">${Number(row.triplet_energy_adiabatic).toFixed(2)}</td>
+                    <td class="font-medium">${Number(row.lamda_S_T).toFixed(2)}</td>
+                    <td class="font-medium">${Number(row.lamda_T_S).toFixed(2)}</td>
                 `;
                 tbody.appendChild(tr);
             });
