@@ -64,6 +64,7 @@ class PlotModeRequest(BaseModel):
     uncertainty: float
     target_name: str
     unit: str
+    theme: str = "light"
 
 @app.post("/api/plot/mode")
 async def api_plot_mode(request: PlotModeRequest):
@@ -75,7 +76,8 @@ async def api_plot_mode(request: PlotModeRequest):
             predicted_value=request.predicted_value,
             uncertainty=request.uncertainty,
             target_name=request.target_name,
-            unit=request.unit
+            unit=request.unit,
+            theme=request.theme
         )
         buf = io.BytesIO()
         fig.savefig(buf, format="png", bbox_inches="tight", dpi=150)
@@ -90,6 +92,7 @@ class PlotSpinRequest(BaseModel):
     spin_population: List[float]
     uncertainty: List[float] = None
     show_uncertainty: bool = False
+    theme: str = "light"
 
 @app.post("/api/plot/spin")
 async def api_plot_spin(request: PlotSpinRequest):
@@ -97,7 +100,8 @@ async def api_plot_spin(request: PlotSpinRequest):
         fig = visualize_density_interactive(
             request.smiles, 
             request.spin_population, 
-            request.uncertainty if request.show_uncertainty else None
+            request.uncertainty if request.show_uncertainty else None,
+            theme=request.theme
         )
         return Response(content=fig.to_json(), media_type="application/json")
     except Exception as e:

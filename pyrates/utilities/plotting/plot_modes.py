@@ -123,16 +123,22 @@ def plot_mode_distribution_single(
     target_name: str,
     unit: str,
     target_value: float = None,
+    theme: str = "light",
 ):
-    # Use dark styling for sleek mode
-    plt.style.use('dark_background')
-    
+    if theme == "dark":
+        plt.style.use('dark_background')
+        bg_color = '#0f172a'
+        fg_color = '#f8fafc'
+        grid_color = '#334155'
+        legend_bg = '#1e293b'
+    else:
+        plt.style.use('default')
+        bg_color = '#ffffff'
+        fg_color = '#0f172a'
+        grid_color = '#e2e8f0'
+        legend_bg = '#ffffff'
+        
     fig, ax = plt.subplots(figsize=(5, 3))
-    
-    # Custom background colors to match Slate 900 tailwind theme (#0f172a)
-    bg_color = '#0f172a'
-    fg_color = '#f8fafc'
-    grid_color = '#334155'
     
     fig.patch.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)
@@ -175,7 +181,7 @@ def plot_mode_distribution_single(
     for spine in ax.spines.values():
         spine.set_color(grid_color)
 
-    ax.legend(fontsize=7, facecolor='#1e293b', edgecolor=grid_color)
+    ax.legend(fontsize=7, facecolor=legend_bg, edgecolor=grid_color)
     ax.grid(True, linestyle='--', linewidth=0.5, color=grid_color)
     fig.tight_layout()
 

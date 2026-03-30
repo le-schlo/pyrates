@@ -9,7 +9,7 @@ from rdkit.Chem import rdDepictor
 from PIL import Image
 
 
-def _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb):
+def _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb, theme="light"):
     """Shared preprocessing: returns (mol, drawer, hover_texts, atom_xs, atom_ys)"""
     mol = Chem.MolFromSmiles(smiles)
     nh_indices = [a.GetIdx() for a in mol.GetAtoms() if a.GetSymbol() == 'N' and a.GetTotalNumHs() > 0]
@@ -28,7 +28,7 @@ def _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb):
 
     atom_radii = {i: float(1.5 * spin_population[i]) for i in range(num_heavy_atoms)}
 
-    drawer, _ = load_acs_style()
+    drawer, _ = load_acs_style(theme)
     draw_opts = {
         "highlightAtoms": list(range(num_heavy_atoms)),
         "highlightAtomColors": atom_colors,
@@ -98,8 +98,8 @@ def visualize_density(smiles, spin_population, uncertainty=None, show_image=True
     return buf.getvalue()
 
 
-def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb=[0, 64, 128]):
-    mol, drawer, atom_xs, atom_ys, hover_texts = _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb)
+def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb=[0, 64, 128], theme="light"):
+    mol, drawer, atom_xs, atom_ys, hover_texts = _prepare_mol_and_drawer(smiles, spin_population, uncertainty, rgb, theme)
     r, g, b, cmin, cmax, label, alpha_start, alpha_end = _make_colorbar_info(spin_population, uncertainty, rgb)
 
     img_b64 = base64.b64encode(drawer.GetDrawingText()).decode()
@@ -130,10 +130,10 @@ def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb
             cmin=cmin, cmax=cmax, color=[cmin],
             showscale=True,
             colorbar=dict(
-                title=dict(text=label, font=dict(color="#f8fafc")),
-                thickness=15, 
+                title=dict(text=label, font=dict(color="#f8fafc" if theme=="dark" else "#0f172a")),
+                thickness=15,
                 len=0.75,
-                tickfont=dict(color="#94a3b8")
+                tickfont=dict(color="#94a3b8" if theme=="dark" else "#64748b")
             ),
         ),
         hoverinfo="skip", showlegend=False,
@@ -146,7 +146,12 @@ def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb
         width=480, height=400,
         plot_bgcolor="rgba(0,0,0,0)",
         paper_bgcolor="rgba(0,0,0,0)",
-        hoverlabel=dict(bgcolor="#1e293b", font_size=13, font_color="#f8fafc", bordercolor="#334155"),
+        hoverlabel=dict(
+            bgcolor="#1e293b" if theme=="dark" else "#ffffff", 
+            font_size=13, 
+            font_color="#f8fafc" if theme=="dark" else "#0f172a", 
+            bordercolor="#334155" if theme=="dark" else "#e2e8f0"
+        ),
     )
 
     return fig
@@ -160,12 +165,14 @@ def uncertainty_to_alpha(value, alpha_max=0.8, uncertainty_factor=2, rgb=[0, 64,
     return tuple(np.append(np.array(rgb) / 255.0, alpha_max - uncertainty_factor * value).tolist())
 
 
-def load_acs_style():
+def load_acs_style(theme="light"):
     drawer = rdMolDraw2D.MolDraw2DCairo(500, 500)
     opts = drawer.drawOptions()
-    # Dark mode layout
     opts.clearBackground = False
-    opts.updateAtomPalette({k: (0.95, 0.95, 0.95) for k in range(0, 120)})
+    if theme == "dark":
+        opts.updateAtomPalette({k: (0.95, 0.95, 0.95) for k in range(0, 120)})
+    else:
+        opts.updateAtomPalette({k: (0.05, 0.05, 0.05) for k in range(0, 120)})
     opts.bondLineWidth = 3.0
     opts.minFontSize = 32
     opts.maxFontSize = 42

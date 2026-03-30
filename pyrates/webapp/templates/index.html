@@ -13,14 +13,45 @@
     <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <style>
         :root {
+            /* Light Theme (Default) */
+            --bg-body: #f8fafc;
+            --bg-surface: #ffffff;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-heading: #0f172a;
+            --accent-gradient: linear-gradient(135deg, #0284c7 0%, #4f46e5 100%);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --ring-color: #4f46e5;
+            --input-bg: rgba(0, 0, 0, 0.02);
+            --input-bg-focus: #ffffff;
+            --glass-shadow: 0 10px 30px -10px rgba(0,0,0,0.1);
+            --bg-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.05) 0%, transparent 50%);
+            --modal-bg: rgba(255, 255, 255, 0.4);
+            --modal-overlay: rgba(255, 255, 255, 0.8);
+            --btn-ghost-bg: rgba(0,0,0,0.05);
+            --btn-ghost-hover: rgba(0,0,0,0.1);
+        }
+
+        [data-theme="dark"] {
+            /* Dark Theme */
             --bg-body: #020617;
             --bg-surface: #0f172a;
             --text-main: #f8fafc;
             --text-muted: #94a3b8;
+            --text-heading: #ffffff;
             --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
             --border-color: rgba(255, 255, 255, 0.08);
             --ring-color: #6366f1;
+            --input-bg: rgba(255, 255, 255, 0.03);
+            --input-bg-focus: rgba(255, 255, 255, 0.05);
+            --glass-shadow: 0 20px 40px -20px rgba(0,0,0,0.5);
+            --bg-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+            --modal-bg: rgba(2, 6, 23, 0.4);
+            --modal-overlay: rgba(0, 0, 0, 0.8);
+            --btn-ghost-bg: rgba(255,255,255,0.05);
+            --btn-ghost-hover: rgba(255,255,255,0.1);
         }
+
         body {
             background-color: var(--bg-body);
             color: var(--text-main);
@@ -28,7 +59,8 @@
             margin: 0;
             padding: 0;
             min-height: 100vh;
-            background-image: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
+            background-image: var(--bg-gradient);
+            transition: background-color 0.3s ease, color 0.3s ease;
         }
 
         h1.title {
@@ -61,10 +93,11 @@
             background: var(--bg-surface);
             border: 1px solid var(--border-color);
             border-radius: 1.25rem;
-            box-shadow: 0 20px 40px -20px rgba(0,0,0,0.5);
+            box-shadow: var(--glass-shadow);
             overflow: hidden;
             display: flex;
             flex-direction: column;
+            transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
         }
 
         .panel-header {
@@ -75,6 +108,8 @@
             display: flex;
             align-items: center;
             gap: 0.5rem;
+            color: var(--text-heading);
+            transition: border-color 0.3s ease;
         }
 
         .panel-body {
@@ -83,7 +118,7 @@
 
         .btn-sleek {
             background: var(--accent-gradient);
-            color: #fff;
+            color: #ffffff;
             border: none;
             border-radius: 0.75rem;
             padding: 0.875rem 1.5rem;
@@ -106,7 +141,7 @@
 
         .input-sleek {
             width: 100%;
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--input-bg);
             border: 1px solid var(--border-color);
             border-radius: 0.75rem;
             padding: 1rem;
@@ -120,7 +155,7 @@
             outline: none;
             border-color: var(--ring-color);
             box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--input-bg-focus);
         }
 
         .sleek-table {
@@ -142,13 +177,13 @@
             color: var(--text-main);
         }
         .sleek-table tr:hover td {
-            background: rgba(255, 255, 255, 0.02);
+            background: var(--btn-ghost-bg);
         }
 
         .loader-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(2, 6, 23, 0.8);
+            background: var(--modal-overlay);
             backdrop-filter: blur(8px);
             display: flex;
             align-items: center;
@@ -168,8 +203,8 @@
         .spinner {
             width: 3rem;
             height: 3rem;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top-color: #0ea5e9;
+            border: 3px solid var(--border-color);
+            border-top-color: var(--ring-color);
             border-radius: 50%;
             animation: spin 1s linear infinite;
         }
@@ -181,6 +216,10 @@
             width: 100%;
             height: 500px;
             border: none;
+            background: #ffffff;
+            transition: filter 0.3s;
+        }
+        [data-theme="dark"] #ketcher-iframe {
             background: #0f172a;
             /* Invert the bright Ketcher interface to match the dark theme */
             filter: invert(0.92) hue-rotate(180deg);
@@ -188,7 +227,7 @@
 
         /* Modal Styles for Full Analysis */
         .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            position: fixed; inset: 0; background: var(--modal-overlay); backdrop-filter: blur(5px);
             display: none; align-items: center; justify-content: center; z-index: 10000;
         }
         .modal.active { display: flex; }
@@ -196,7 +235,7 @@
             background: var(--bg-surface); width: 90%; max-width: 1200px; max-height: 90vh;
             border: 1px solid var(--border-color); border-radius: 1.25rem;
             display: flex; flex-direction: column; overflow: hidden;
-            box-shadow: 0 20px 40px -20px rgba(0,0,0,0.8);
+            box-shadow: var(--glass-shadow);
         }
         .modal-header {
             padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
@@ -205,16 +244,44 @@
             padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2rem;
         }
         .close-btn { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
-        .close-btn:hover { color: #fff; }
+        .close-btn:hover { color: var(--text-heading); }
+
+        .theme-toggle-btn {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: var(--glass-shadow);
+            transition: all 0.2s;
+        }
+        .theme-toggle-btn:hover {
+            transform: scale(1.1);
+        }
+        [data-theme="dark"] .icon-sun { display: none; }
+        [data-theme="light"] .icon-moon { display: none; }
     </style>
 </head>
 <body>
+
+    <button onclick="toggleTheme()" class="theme-toggle-btn" title="Toggle Theme">
+        <svg class="w-5 h-5 icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+        <svg class="w-5 h-5 icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+    </button>
 
     <!-- Modal for Mode Plot -->
     <div id="mode-plot-modal" class="modal">
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
-                <h3 class="text-lg font-bold text-white flex items-center gap-2" id="mode-plot-title">
+                <h3 class="text-lg font-bold text-[var(--text-heading)] flex items-center gap-2" id="mode-plot-title">
                     Mode Distribution
                 </h3>
                 <button class="close-btn" onclick="closeModeModal()">
@@ -312,6 +379,8 @@
             loader.style.display = 'block';
             modal.classList.add('active');
 
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+
             try {
                 const reqBody = {
                     mu: row[`${valKey}_mdn_mu`],
@@ -320,7 +389,8 @@
                     predicted_value: row[valKey],
                     uncertainty: row[`${valKey}_uncertainty`],
                     target_name: name,
-                    unit: 'kcal/mol'
+                    unit: 'kcal/mol',
+                    theme: currentTheme
                 };
                 const r = await fetch('/api/plot/mode', {
                     method: 'POST',
@@ -364,19 +434,19 @@
             const analysisGrid = `
                 <div>
                    <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2 flex-wrap gap-4">
-                       <h4 class="text-lg font-bold text-white flex items-center gap-2">
+                       <h4 class="text-lg font-bold text-[var(--text-heading)] flex items-center gap-2">
                            <svg class="w-5 h-5 text-[#0ea5e9]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
                            Spin Density Distribution
-                           <span class="font-mono text-sm ml-2 px-2 py-1 bg-[rgba(255,255,255,0.05)] border border-[var(--border-color)] rounded">${row.smiles}</span>
+                           <span class="font-mono text-sm ml-2 px-2 py-1 bg-[var(--btn-ghost-bg)] border border-[var(--border-color)] rounded">${row.smiles}</span>
                        </h4>
                        <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-[var(--text-muted)] hover:text-white transition-colors">
                            <input type="checkbox" id="toggle-unc-${row.smiles.replace(/\W/g,'_')}" class="accent-[#0ea5e9] w-4 h-4 rounded">
                            Show Uncertainty
                        </label>
                    </div>
-                   <div class="bg-white rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-transparent">
+                   <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] [data-theme='dark']:shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-[var(--border-color)]">
                        <div id="spin-plotly" class="w-full h-[500px] flex items-center justify-center">
-                           <div class="spinner border-t-[#6366f1]"></div>
+                           <div class="spinner border-t-[var(--ring-color)]"></div>
                        </div>
                    </div>
                 </div>
@@ -384,9 +454,10 @@
             containerEl.innerHTML = analysisGrid;
 
             // Load interactive spin density
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
             const loadSpinPlot = async (showUnc) => {
                 const spDiv = document.getElementById('spin-plotly');
-                spDiv.innerHTML = '<div class="spinner border-t-[#6366f1]"></div>';
+                spDiv.innerHTML = '<div class="spinner border-t-[var(--ring-color)]"></div>';
                 try {
                     const r = await fetch('/api/plot/spin', {
                         method: 'POST',
@@ -395,7 +466,8 @@
                             smiles: row.smiles,
                             spin_population: row.spin_map,
                             uncertainty: row.spin_map_uncertainty,
-                            show_uncertainty: showUnc
+                            show_uncertainty: showUnc,
+                            theme: currentTheme
                         })
                     });
                     if(r.ok) {
@@ -525,7 +597,7 @@
             const cellVal = (idx, row, key, name) => `
                 <div class="flex items-center gap-2 whitespace-nowrap">
                     <span class="font-medium flex-1">${Number(row[key]).toFixed(2)} <span class="text-xs text-[var(--text-muted)] ml-0.5" title="Uncertainty">±${Number(row[`${key}_uncertainty`]).toFixed(2)}</span></span>
-                    <button onclick="showModePlot(${idx}, '${key}', '${name}')" class="text-[var(--text-muted)] hover:text-[#0ea5e9] transition-colors bg-white/5 p-1 rounded hover:bg-[#0ea5e9]/10" title="View mode distribution">
+                    <button onclick="showModePlot(${idx}, '${key}', '${name}')" class="text-[var(--text-muted)] hover:text-[#0ea5e9] transition-colors bg-[var(--btn-ghost-bg)] p-1 rounded hover:bg-[var(--btn-ghost-hover)]" title="View mode distribution">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M9 15l3-3 4 4 5-5" /></svg>
                     </button>
                 </div>
@@ -534,13 +606,13 @@
             results.forEach((row, idx) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-blue-300 w-1/3">${row.smiles}</td>
+                    <td style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-[var(--text-main)] w-1/3">${row.smiles}</td>
                     <td>${cellVal(idx, row, 'triplet_energy_adiabatic', 'Triplet energy (adiabatic)')}</td>
                     <td>${cellVal(idx, row, 'lamda_S_T', '(S†→T)')}</td>
                     <td>${cellVal(idx, row, 'lamda_T_S', '(T†→S)')}</td>
                     ${results.length > 1 ? `
                     <td class="text-right">
-                        <button onclick="openDetailedAnalysis(${idx})" class="text-xs bg-[var(--bg-body)] border border-[var(--border-color)] hover:border-[#6366f1] text-[#94a3b8] hover:text-[#f8fafc] transition-all px-3 py-1.5 rounded bg-opacity-50 inline-flex items-center gap-2">
+                        <button onclick="openDetailedAnalysis(${idx})" class="text-xs bg-[var(--bg-body)] border border-[var(--border-color)] hover:border-[#6366f1] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all px-3 py-1.5 rounded inline-flex items-center gap-2">
                            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
                            Detailed Analysis
                         </button>
@@ -559,6 +631,33 @@
             if(results.length === 1) {
                 detailPanel.className = 'mt-8 border-t border-[var(--border-color)] pt-8';
                 injectAnalysis(detailPanel, results[0]);
+            }
+        }
+
+        // Setup initial theme mapping
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.body.setAttribute('data-theme', savedTheme);
+
+        function toggleTheme() {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            const nextTheme = isDark ? 'light' : 'dark';
+            document.body.setAttribute('data-theme', nextTheme);
+            localStorage.setItem('theme', nextTheme);
+
+            // Re-render open plots if they exist
+            if (window.appData && window.appData.length > 0) {
+                if (window.appData.length === 1) {
+                    const detailPanel = document.getElementById('detailed-analysis-panel');
+                    if (detailPanel.innerHTML.trim() !== '') {
+                        injectAnalysis(detailPanel, window.appData[0]);
+                    }
+                } else {
+                    const detailPanel = document.getElementById('detailed-analysis-panel');
+                    if (detailPanel.innerHTML.trim() !== '') {
+                        // find which one is rendered, or easier: reset the display to make them click the row again
+                        detailPanel.innerHTML = '';
+                    }
+                }
             }
         }
     </script>
