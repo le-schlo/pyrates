@@ -268,6 +268,47 @@
         }
         [data-theme="dark"] .icon-sun { display: none; }
         [data-theme="light"] .icon-moon { display: none; }
+
+        /* Custom Toggle Switch for Uncertainty */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--input-bg);
+            border: 1px solid var(--border-color);
+            transition: .3s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 2px;
+            bottom: 2px;
+            background-color: var(--text-muted);
+            transition: .3s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: var(--ring-color);
+            border-color: var(--ring-color);
+        }
+        input:checked + .slider:before {
+            transform: translateX(20px);
+            background-color: #ffffff;
+        }
     </style>
 </head>
 <body>
@@ -279,7 +320,7 @@
 
     <!-- Modal for Mode Plot -->
     <div id="mode-plot-modal" class="modal">
-        <div class="modal-content" style="max-width: 600px;">
+        <div class="modal-content" style="max-width: 900px;">
             <div class="modal-header">
                 <h3 class="text-lg font-bold text-[var(--text-heading)] flex items-center gap-2" id="mode-plot-title">
                     Mode Distribution
@@ -289,7 +330,7 @@
                 </button>
             </div>
             <div class="modal-body items-center" id="mode-plot-body">
-                <img id="mode-plot-img" class="w-full h-auto rounded opacity-0 transition-opacity duration-300 hidden" />
+                <img id="mode-plot-img" src="" alt="Mode plot" class="w-full h-auto rounded opacity-0 transition-opacity duration-300 hidden" />
                 <div id="mode-plot-loader" class="spinner border-t-[#6366f1]"></div>
             </div>
         </div>
@@ -307,13 +348,16 @@
         <!-- Input Section -->
         <div class="flex flex-col gap-8">
             <div class="glass-panel">
-                <div class="panel-header">
-                    <svg class="w-5 h-5 text-[#0ea5e9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                    Molecular Input
+                <div class="panel-header justify-between">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-[#0ea5e9]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                        Molecular Input
+                    </div>
+                    <button class="text-xs bg-[var(--btn-ghost-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] px-3 py-1.5 rounded hover:bg-[var(--btn-ghost-hover)] transition-colors" onclick="clearInput()">Clear</button>
                 </div>
                 <div class="panel-body space-y-5">
                     <div>
-                        <label class="block text-sm font-medium text-[var(--text-muted)] mb-2">Input SMILES (batch support)</label>
+                        <label class="block text-sm font-medium text-[var(--text-muted)] mb-2">Input SMILES</label>
                         <textarea id="smiles-input" class="input-sleek" rows="4" placeholder="e.g. C1=CC=CC=C1&#10;CCO"></textarea>
                     </div>
 
@@ -333,8 +377,8 @@
                      <iframe id="ketcher-iframe" src="/static/ketcher/index.html"></iframe>
                  </div>
                  <div class="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)]">
-                     <span class="text-xs text-[var(--text-muted)]">Use Ketcher to draw, then automatically load SMILES</span>
-                     <button onclick="getSmilesFromKetcher()" class="text-xs font-semibold bg-[rgba(139,92,246,0.2)] text-[#a78bfa] border border-[#a78bfa]/30 px-3 py-1.5 rounded-lg hover:bg-[#a78bfa]/30 transition-colors">
+                     <span class="text-xs text-[var(--text-muted)]">Use Ketcher to draw, then load SMILES</span>
+                     <button onclick="getSmilesFromKetcher()" class="text-xs font-semibold bg-[#8b5cf6] text-white border border-[#8b5cf6] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed] transition-colors">
                          Load SMILES
                      </button>
                  </div>
@@ -343,9 +387,19 @@
 
         <!-- Results Section -->
         <div class="glass-panel h-max">
-            <div class="panel-header">
-                <svg class="w-5 h-5 text-[#6366f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                <div class="flex-1">Analysis Results</div>
+            <div class="panel-header flex-wrap">
+                <div class="flex items-center gap-2 flex-1">
+                    <svg class="w-5 h-5 text-[#6366f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    <span>Analysis Results</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <select id="unit-select" class="input-sleek w-auto py-1 px-2 text-xs" onchange="runRenderResults()">
+                        <option value="kcal/mol">kcal/mol</option>
+                        <option value="kJ/mol">kJ/mol</option>
+                        <option value="eV">eV</option>
+                        <option value="Hartree">Hartree</option>
+                    </select>
+                </div>
             </div>
             <div class="panel-body">
                 <div id="results-container" class="overflow-x-auto">
@@ -361,35 +415,48 @@
 
     <script>
         window.appData = []; // Store latest results globally
+        window.modePlotCache = {}; // Cache for prefetched mode plots
+
+        const FACTORS_TO_KCAL = {
+            "kcal/mol": 1.0,
+            "kJ/mol": 0.2390057361376673,
+            "eV": 23.060548868,
+            "Hartree": 627.5094740631,
+        };
+
+        function convertEnergy(val, toUnit) {
+            return (val * FACTORS_TO_KCAL["kcal/mol"]) / FACTORS_TO_KCAL[toUnit];
+        }
+
+        function clearInput() {
+            document.getElementById('smiles-input').value = '';
+            document.getElementById('error-box').classList.add('hidden');
+            window.appData = [];
+            window.modePlotCache = {};
+            runRenderResults();
+        }
 
         function closeModeModal() {
             document.getElementById('mode-plot-modal').classList.remove('active');
         }
 
-        async function showModePlot(idx, valKey, name) {
-            const row = window.appData[idx];
-            if(!row) return;
-            const modal = document.getElementById('mode-plot-modal');
-            document.getElementById('mode-plot-title').innerText = `Mode Distribution: ${name}`;
-
-            const img = document.getElementById('mode-plot-img');
-            const loader = document.getElementById('mode-plot-loader');
-
-            img.classList.add('hidden', 'opacity-0');
-            loader.style.display = 'block';
-            modal.classList.add('active');
-
+        async function prefetchModePlot(row, valKey, name) {
             const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            const selectedUnit = document.getElementById('unit-select').value;
+            const cacheKey = `${row.smiles}_${valKey}_${currentTheme}_${selectedUnit}`;
+            if (window.modePlotCache[cacheKey]) return; // Already requested or fetched
+
+            window.modePlotCache[cacheKey] = 'loading'; // Mark as loading
 
             try {
                 const reqBody = {
-                    mu: row[`${valKey}_mdn_mu`],
-                    sigma: row[`${valKey}_mdn_sigma`],
+                    mu: row[`${valKey}_mdn_mu`].map(x => convertEnergy(x, selectedUnit)),
+                    sigma: row[`${valKey}_mdn_sigma`].map(x => convertEnergy(x, selectedUnit)),
                     pi: row[`${valKey}_mdn_pi`],
-                    predicted_value: row[valKey],
-                    uncertainty: row[`${valKey}_uncertainty`],
+                    predicted_value: convertEnergy(row[valKey], selectedUnit),
+                    uncertainty: convertEnergy(row[`${valKey}_uncertainty`], selectedUnit),
                     target_name: name,
-                    unit: 'kcal/mol',
+                    unit: selectedUnit,
                     theme: currentTheme
                 };
                 const r = await fetch('/api/plot/mode', {
@@ -399,11 +466,80 @@
                 });
                 if(r.ok) {
                     const blob = await r.blob();
-                    img.src = URL.createObjectURL(blob);
+                    window.modePlotCache[cacheKey] = URL.createObjectURL(blob);
+                } else {
+                    window.modePlotCache[cacheKey] = 'error';
+                }
+            } catch(e) {
+                window.modePlotCache[cacheKey] = 'error';
+            }
+        }
+
+        function prefetchInitialPlots() {
+            const vars = [
+                {valKey: 'triplet_energy_adiabatic', name: 'Triplet energy (adiabatic)'},
+                {valKey: 'lamda_S_T', name: '(S†→T)'},
+                {valKey: 'lamda_T_S', name: '(T†→S)'}
+            ];
+            window.appData.forEach(row => {
+                vars.forEach(v => prefetchModePlot(row, v.valKey, v.name));
+            });
+        }
+
+        async function showModePlot(idx, valKey, name) {
+            const row = window.appData[idx];
+            if(!row) return;
+            const modal = document.getElementById('mode-plot-modal');
+
+            const currentTheme = document.body.getAttribute('data-theme') || 'light';
+            const selectedUnit = document.getElementById('unit-select').value;
+
+            document.getElementById('mode-plot-title').innerText = `Mode Distribution: ${name} (${selectedUnit})`;
+
+            const img = document.getElementById('mode-plot-img');
+            const loader = document.getElementById('mode-plot-loader');
+
+            img.classList.add('hidden', 'opacity-0');
+            modal.classList.add('active');
+
+            const cacheKey = `${row.smiles}_${valKey}_${currentTheme}_${selectedUnit}`;
+
+            // Check cache
+            if (window.modePlotCache[cacheKey] && window.modePlotCache[cacheKey] !== 'loading' && window.modePlotCache[cacheKey] !== 'error') {
+                loader.style.display = 'none';
+                img.src = window.modePlotCache[cacheKey];
+                img.onload = () => {
+                    img.classList.remove('hidden', 'opacity-0');
+                };
+                return;
+            }
+
+            loader.style.display = 'block';
+
+            try {
+                const reqBody = {
+                    mu: row[`${valKey}_mdn_mu`].map(x => convertEnergy(x, selectedUnit)),
+                    sigma: row[`${valKey}_mdn_sigma`].map(x => convertEnergy(x, selectedUnit)),
+                    pi: row[`${valKey}_mdn_pi`],
+                    predicted_value: convertEnergy(row[valKey], selectedUnit),
+                    uncertainty: convertEnergy(row[`${valKey}_uncertainty`], selectedUnit),
+                    target_name: name,
+                    unit: selectedUnit,
+                    theme: currentTheme
+                };
+                const r = await fetch('/api/plot/mode', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reqBody)
+                });
+                if(r.ok) {
+                    const blob = await r.blob();
+                    const url = URL.createObjectURL(blob);
+                    window.modePlotCache[cacheKey] = url;
+                    img.src = url;
                     img.onload = () => {
                         loader.style.display = 'none';
-                        img.classList.remove('hidden');
-                        img.classList.remove('opacity-0');
+                        img.classList.remove('hidden', 'opacity-0');
                     };
                 } else {
                     loader.style.display = 'none';
@@ -439,10 +575,13 @@
                            Spin Density Distribution
                            <span class="font-mono text-sm ml-2 px-2 py-1 bg-[var(--btn-ghost-bg)] border border-[var(--border-color)] rounded">${row.smiles}</span>
                        </h4>
-                       <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-[var(--text-muted)] hover:text-white transition-colors">
-                           <input type="checkbox" id="toggle-unc-${row.smiles.replace(/\W/g,'_')}" class="accent-[#0ea5e9] w-4 h-4 rounded">
-                           Show Uncertainty
-                       </label>
+                       <div class="flex items-center gap-3">
+                           <span class="text-sm font-medium text-[var(--text-muted)]">Show Uncertainty</span>
+                           <label class="toggle-switch">
+                               <input type="checkbox" id="toggle-unc-${row.smiles.replace(/\W/g,'_')}">
+                               <span class="slider"></span>
+                           </label>
+                       </div>
                    </div>
                    <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] [data-theme='dark']:shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-[var(--border-color)]">
                        <div id="spin-plotly" class="w-full h-[500px] flex items-center justify-center">
@@ -489,6 +628,10 @@
             }
         }
 
+
+        function runRenderResults() {
+            renderResults(window.appData, window.currentInvalid || []);
+        }
 
         async function getSmilesFromKetcher() {
             try {
@@ -545,7 +688,10 @@
                 }
 
                 window.appData = data.results;
-                renderResults(data.results, data.invalid);
+                window.currentInvalid = data.invalid;
+                window.modePlotCache = {}; // clear cached images on new run
+                runRenderResults();
+                prefetchInitialPlots(); // Prefetch images in background for instant loading
 
             } catch (e) {
                 errBox.innerText = e.message;
@@ -558,6 +704,8 @@
         function renderResults(results, invalid) {
             const container = document.getElementById('results-container');
             container.innerHTML = '';
+
+            const selectedUnit = document.getElementById('unit-select').value;
 
             if (invalid && invalid.length > 0) {
                 const warn = document.createElement('div');
@@ -583,9 +731,9 @@
             thead.innerHTML = `
                 <tr>
                     <th>SMILES</th>
-                    <th>E_T <span class="text-xs opacity-50">(kcal/mol)</span></th>
-                    <th>λ_S_T</th>
-                    <th>λ_T_S</th>
+                    <th>E_T <span class="text-xs opacity-50">(${selectedUnit})</span></th>
+                    <th>λ_S_T <span class="text-xs opacity-50">(${selectedUnit})</span></th>
+                    <th>λ_T_S <span class="text-xs opacity-50">(${selectedUnit})</span></th>
                     ${results.length > 1 ? '<th class="text-right">Actions</th>' : ''}
                 </tr>
             `;
@@ -594,14 +742,17 @@
             // Body
             const tbody = document.createElement('tbody');
 
-            const cellVal = (idx, row, key, name) => `
+            const cellVal = (idx, row, key, name) => {
+                const convertedVal = convertEnergy(row[key], selectedUnit);
+                const convertedUnc = convertEnergy(row[`${key}_uncertainty`], selectedUnit);
+                return `
                 <div class="flex items-center gap-2 whitespace-nowrap">
-                    <span class="font-medium flex-1">${Number(row[key]).toFixed(2)} <span class="text-xs text-[var(--text-muted)] ml-0.5" title="Uncertainty">±${Number(row[`${key}_uncertainty`]).toFixed(2)}</span></span>
+                    <span class="font-medium flex-1">${convertedVal.toFixed(2)} <span class="text-xs text-[var(--text-muted)] ml-0.5" title="Uncertainty">±${convertedUnc.toFixed(2)}</span></span>
                     <button onclick="showModePlot(${idx}, '${key}', '${name}')" class="text-[var(--text-muted)] hover:text-[#0ea5e9] transition-colors bg-[var(--btn-ghost-bg)] p-1 rounded hover:bg-[var(--btn-ghost-hover)]" title="View mode distribution">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M9 15l3-3 4 4 5-5" /></svg>
                     </button>
                 </div>
-            `;
+            `};
 
             results.forEach((row, idx) => {
                 const tr = document.createElement('tr');
@@ -643,23 +794,20 @@
             const nextTheme = isDark ? 'light' : 'dark';
             document.body.setAttribute('data-theme', nextTheme);
             localStorage.setItem('theme', nextTheme);
+            window.modePlotCache = {}; // clear cached images on theme switch!
 
             // Re-render open plots if they exist
             if (window.appData && window.appData.length > 0) {
-                if (window.appData.length === 1) {
-                    const detailPanel = document.getElementById('detailed-analysis-panel');
-                    if (detailPanel.innerHTML.trim() !== '') {
-                        injectAnalysis(detailPanel, window.appData[0]);
-                    }
-                } else {
-                    const detailPanel = document.getElementById('detailed-analysis-panel');
-                    if (detailPanel.innerHTML.trim() !== '') {
-                        // find which one is rendered, or easier: reset the display to make them click the row again
-                        detailPanel.innerHTML = '';
-                    }
-                }
+                prefetchInitialPlots();
             }
         }
+
+        // Close modal when clicking outside
+        document.getElementById('mode-plot-modal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModeModal();
+            }
+        });
     </script>
 </body>
 </html>

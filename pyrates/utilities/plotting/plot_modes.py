@@ -138,7 +138,7 @@ def plot_mode_distribution_single(
         grid_color = '#e2e8f0'
         legend_bg = '#ffffff'
         
-    fig, ax = plt.subplots(figsize=(5, 3))
+    fig, ax = plt.subplots(figsize=(8, 5))
     
     fig.patch.set_facecolor(bg_color)
     ax.set_facecolor(bg_color)
