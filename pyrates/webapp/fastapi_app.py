@@ -16,7 +16,10 @@ from pyrates.webapp.webapp.routes import predict
 from pyrates.webapp.science_utils.smiles_utils import is_valid_smiles, canonicalize_smiles
 from pyrates.utilities.plotting.visualize_spin_population import visualize_density_interactive, visualize_density
 from pyrates.utilities.plotting.plot_modes import plot_mode_distribution_single
+from pyrates.webapp.science_utils.photocatalysts import list_photocatalyst_names, get_photocatalyst_row
+from pyrates.webapp.science_utils import marcus_theory
 import matplotlib.pyplot as plt
+import numpy as np
 
 app = FastAPI(title="PyRates REST API")
 
@@ -104,6 +107,78 @@ async def api_plot_spin(request: PlotSpinRequest):
             theme=request.theme
         )
         return Response(content=fig.to_json(), media_type="application/json")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/api/photocatalysts")
+async def api_photocatalysts():
+    names = list_photocatalyst_names()
+    pcs = []
+    for n in names:
+        row = get_photocatalyst_row(n)
+        pcs.append({
+            "name": n,
+            "E_T_adiabatic": float(row["E_T_adiabatic"]),
+            "lamda_S_T": float(row["lamda_S_T"]),
+            "lamda_T_S": float(row["lamda_T_S"]),
+        })
+    return {"photocatalysts": pcs}
+
+class MarcusRequest(BaseModel):
+    pc_adiabatic_E_T: float
+    pc_lambda_S_T: float
+    pc_lambda_T_S: float
+    quencher_E_T: float
+    quencher_lambda_S_T: float
+    quencher_lambda_T_S: float
+    unit: str = "kcal/mol"
+
+@app.post("/api/marcus/compute")
+async def api_marcus_compute(request: MarcusRequest):
+    dG, dG_act_fwd, dG_act_bwd = marcus_theory.calculate_driving_force_and_barrier(
+        pc_adiabatic_E_T=request.pc_adiabatic_E_T,
+        pc_lambda_S_T=request.pc_lambda_S_T,
+        pc_lambda_T_S=request.pc_lambda_T_S,
+        quencher_E_T=request.quencher_E_T,
+        quencher_lambda_S_T=request.quencher_lambda_S_T,
+        quencher_lambda_T_S=request.quencher_lambda_T_S,
+        symmetric_approx=False,
+    )
+    return {
+        "dG": float(dG),
+        "dG_activation": float(dG_act_fwd),
+        "dG_activation_backEnT": float(dG_act_bwd),
+    }
+
+@app.post("/api/marcus/plot")
+async def api_marcus_plot(request: MarcusRequest):
+    try:
+        res = marcus_theory.plot_reaction_coordinate(
+            pc_adiabatic_E_T=request.pc_adiabatic_E_T,
+            pc_lambda_S_T=request.pc_lambda_S_T,
+            pc_lambda_T_S=request.pc_lambda_T_S,
+            quencher_E_T=request.quencher_E_T,
+            quencher_lambda_S_T=request.quencher_lambda_S_T,
+            quencher_lambda_T_S=request.quencher_lambda_T_S,
+            unit=request.unit,
+            render=True,
+            show=False,
+        )
+        fig = res.get("fig", None)
+        if fig is None:
+            raise ValueError("Could not generate figure")
+        
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+        plt.close(fig)
+        buf.seek(0)
+        
+        # We also want to return symmetric_approx info. Using headers to pass metadata.
+        headers = {
+            "X-Symmetric-Approx": "true" if res.get("symmetric_approx") else "false",
+            "X-Symmetric-Reason": str(res.get("symmetric_reason", ""))
+        }
+        return Response(content=buf.getvalue(), media_type="image/png", headers=headers)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

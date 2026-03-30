@@ -76,16 +76,86 @@
         }
 
         .container-main {
-            display: grid;
-            grid-template-columns: 1fr;
+            display: flex;
+            flex-direction: column;
             gap: 2rem;
             max-width: 1400px;
             margin: 0 auto;
             padding: 0 2rem 4rem 2rem;
+            transition: all 0.5s ease;
         }
+
+        .input-section, .results-section, .marcus-section {
+            width: 100%;
+            transition: all 0.5s ease;
+            transform-origin: center;
+        }
+
+        .marcus-section {
+            display: none;
+            flex-direction: column;
+        }
+
+        /* Mobile specific states */
+        .container-main.has-marcus .marcus-section {
+            display: flex;
+        }
+        .container-main.focus-input .results-section,
+        .container-main.focus-input .marcus-section,
+        .container-main.has-results .input-section,
+        .container-main.has-marcus .input-section,
+        .container-main.has-marcus .results-section {
+            opacity: 0.6;
+            transform: scale(0.98);
+        }
+
+        /* Desktop Timeline View */
         @media(min-width: 1024px) {
             .container-main {
-                grid-template-columns: 1fr 1fr;
+                flex-direction: row;
+                align-items: flex-start;
+                overflow-x: auto;
+                scroll-behavior: smooth;
+                padding-bottom: 2rem; /* Give space for scrollbar */
+            }
+
+            /* Nice subtle scrollbar */
+            .container-main::-webkit-scrollbar {
+                height: 8px;
+            }
+            .container-main::-webkit-scrollbar-thumb {
+                background: var(--text-muted);
+                border-radius: 4px;
+            }
+            .container-main::-webkit-scrollbar-track {
+                background: transparent;
+            }
+
+            .marcus-section {
+                display: flex; /* Make it live in the timeline even when not focused */
+            }
+
+            .input-section, .results-section, .marcus-section {
+                flex-shrink: 0;
+                width: calc(40% - 1rem); /* Base inactive width */
+                opacity: 0.6;
+                transform: scale(0.96);
+                cursor: pointer;
+            }
+
+            .input-section:hover, .results-section:hover, .marcus-section:hover {
+                opacity: 0.8;
+                transform: scale(0.98);
+            }
+
+            /* Active UI panel state */
+            .container-main.focus-input .input-section,
+            .container-main.has-results .results-section,
+            .container-main.has-marcus .marcus-section {
+                width: calc(60% - 1rem);
+                opacity: 1;
+                transform: scale(1);
+                cursor: default;
             }
         }
 
@@ -343,10 +413,10 @@
 
     <h1 class="title">PyRates / EnTdecker 2.0</h1>
 
-    <div class="container-main">
+    <div id="main-container" class="container-main focus-input">
 
         <!-- Input Section -->
-        <div class="flex flex-col gap-8">
+        <div class="flex flex-col gap-8 input-section" onclick="handleSectionClick('input')">
             <div class="glass-panel">
                 <div class="panel-header justify-between">
                     <div class="flex items-center gap-2">
@@ -391,7 +461,7 @@
         </div>
 
         <!-- Results Section -->
-        <div class="glass-panel h-max">
+        <div class="glass-panel h-max results-section" onclick="handleSectionClick('results')">
             <div class="panel-header flex-wrap">
                 <div class="flex items-center gap-2 flex-1">
                     <svg class="w-5 h-5 text-[#6366f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
@@ -407,10 +477,50 @@
                 </div>
             </div>
             <div class="panel-body">
-                <div id="results-container" class="overflow-x-auto">
+                <div id="results-container" class="overflow-x-auto mb-4">
                     <div class="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
                         <svg class="w-12 h-12 mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
                         <p class="text-sm font-medium">No data yet. Awaiting input.</p>
+                    </div>
+                </div>
+                <!-- Action to open Marcus Theory -->
+                <button id="btn-marcus" class="btn-sleek hidden mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-emerald-500/30" onclick="toggleMarcusTheory(event)">
+                    Marcus Theory Analysis
+                </button>
+            </div>
+        </div>
+
+        <!-- Marcus Theory Section -->
+        <div class="glass-panel h-max marcus-section" onclick="handleSectionClick('marcus')">
+            <div class="panel-header flex-wrap">
+                <div class="flex items-center gap-2 flex-1">
+                    <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    <span>Marcus Theory Analysis</span>
+                </div>
+                <button class="text-xs bg-[var(--btn-ghost-bg)] text-[var(--text-muted)] hover:text-[var(--text-main)] px-3 py-1.5 rounded hover:bg-[var(--btn-ghost-hover)] transition-colors" onclick="closeMarcusTheory(event)">Close</button>
+            </div>
+            <div class="panel-body space-y-6">
+
+                <div class="flex items-center gap-4 flex-wrap">
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-[var(--text-muted)] mb-2">Photocatalyst</label>
+                        <select id="pc-select" class="input-sleek py-2" onchange="runMarcusAnalysis()"></select>
+                    </div>
+                    <div class="flex-1 min-w-[200px]">
+                        <label class="block text-sm font-medium text-[var(--text-muted)] mb-2">Quencher</label>
+                        <select id="quencher-select" class="input-sleek py-2" onchange="runMarcusAnalysis()"></select>
+                    </div>
+                </div>
+
+                <div id="marcus-results-container">
+                    <div class="flex flex-col items-center justify-center py-12 text-[var(--text-muted)]">
+                        <p class="text-sm font-medium">Select a photocatalyst and quencher.</p>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] [data-theme='dark']:shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-[var(--border-color)]">
+                    <div id="marcus-plot-container" class="w-full min-h-[400px] flex items-center justify-center">
+                        <p class="text-sm text-[var(--text-muted)]">Plot will appear here</p>
                     </div>
                 </div>
             </div>
@@ -421,6 +531,7 @@
     <script>
         window.appData = []; // Store latest results globally
         window.modePlotCache = {}; // Cache for prefetched mode plots
+        window.pcData = []; // Store photocatalyst data
 
         const FACTORS_TO_KCAL = {
             "kcal/mol": 1.0,
@@ -428,6 +539,29 @@
             "eV": 23.060548868,
             "Hartree": 627.5094740631,
         };
+
+        function handleSectionClick(section) {
+            const container = document.getElementById('main-container');
+            const hasData = window.appData && window.appData.length > 0;
+
+            // Allow interacting with results/marcus only if data exists
+            if (!hasData && section !== 'input') {
+                return;
+            }
+
+            container.classList.remove('focus-input', 'has-results', 'has-marcus');
+
+            if (section === 'input') {
+                container.classList.add('focus-input');
+                document.querySelector('.input-section').scrollIntoView({ behavior: 'smooth', inline: 'start', block: 'nearest' });
+            } else if (section === 'results') {
+                container.classList.add('has-results');
+                document.querySelector('.results-section').scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            } else if (section === 'marcus') {
+                container.classList.add('has-marcus');
+                document.querySelector('.marcus-section').scrollIntoView({ behavior: 'smooth', inline: 'end', block: 'nearest' });
+            }
+        }
 
         function convertEnergy(val, toUnit) {
             return (val * FACTORS_TO_KCAL["kcal/mol"]) / FACTORS_TO_KCAL[toUnit];
@@ -450,8 +584,11 @@
         function clearInput() {
             document.getElementById('smiles-input').value = '';
             document.getElementById('error-box').classList.add('hidden');
+            document.getElementById('btn-marcus').classList.add('hidden');
             window.appData = [];
             window.modePlotCache = {};
+            const container = document.getElementById('main-container');
+            container.classList.remove('has-results', 'focus-input', 'has-marcus');
             runRenderResults();
         }
 
@@ -709,6 +846,13 @@
                 window.appData = data.results;
                 window.currentInvalid = data.invalid;
                 window.modePlotCache = {}; // clear cached images on new run
+
+                const container = document.getElementById('main-container');
+                container.classList.remove('focus-input', 'has-marcus');
+                container.classList.add('has-results');
+
+                document.getElementById('btn-marcus').classList.remove('hidden');
+
                 runRenderResults();
                 prefetchInitialPlots(); // Prefetch images in background for instant loading
 
@@ -802,7 +946,141 @@
                 detailPanel.className = 'mt-8 border-t border-[var(--border-color)] pt-8';
                 injectAnalysis(detailPanel, results[0]);
             }
+
+            // Populate Quencher dropdown for Marcus Theory
+            const qSelect = document.getElementById('quencher-select');
+            qSelect.innerHTML = '';
+            results.forEach((r, i) => {
+                const opt = document.createElement('option');
+                opt.value = i;
+                opt.innerText = r.smiles;
+                qSelect.appendChild(opt);
+            });
         }
+
+        // --- Marcus Theory Functions ---
+
+        async function fetchPhotocatalysts() {
+            try {
+                const r = await fetch('/api/photocatalysts');
+                if(r.ok) {
+                    const data = await r.json();
+                    window.pcData = data.photocatalysts;
+                    const pcSelect = document.getElementById('pc-select');
+                    pcSelect.innerHTML = '';
+                    window.pcData.forEach((pc, i) => {
+                        const opt = document.createElement('option');
+                        opt.value = i;
+                        opt.innerText = pc.name;
+                        pcSelect.appendChild(opt);
+                    });
+                }
+            } catch(e) {
+                console.error("Failed to fetch photocatalysts", e);
+            }
+        }
+
+        function toggleMarcusTheory(e) {
+            e.stopPropagation();
+            if(window.pcData.length === 0) {
+                fetchPhotocatalysts().then(() => runMarcusAnalysis());
+            } else {
+                runMarcusAnalysis();
+            }
+            handleSectionClick('marcus');
+        }
+
+        function closeMarcusTheory(e) {
+            e.stopPropagation();
+            handleSectionClick('results');
+        }
+
+        async function runMarcusAnalysis() {
+            const pcIdx = document.getElementById('pc-select').value;
+            const qIdx = document.getElementById('quencher-select').value;
+            if(!pcIdx || !qIdx || !window.appData[qIdx] || !window.pcData[pcIdx]) return;
+
+            const unit = document.getElementById('unit-select').value;
+            const qVal = window.appData[qIdx];
+            const pcVal = window.pcData[pcIdx];
+
+            const reqBody = {
+                pc_adiabatic_E_T: convertEnergy(pcVal.E_T_adiabatic, unit),
+                pc_lambda_S_T: convertEnergy(pcVal.lamda_S_T, unit),
+                pc_lambda_T_S: convertEnergy(pcVal.lamda_T_S, unit),
+                quencher_E_T: convertEnergy(qVal.triplet_energy_adiabatic, unit),
+                quencher_lambda_S_T: convertEnergy(qVal.lamda_S_T, unit),
+                quencher_lambda_T_S: convertEnergy(qVal.lamda_T_S, unit),
+                unit: unit
+            };
+
+            // Setup loading state
+            const rContainer = document.getElementById('marcus-results-container');
+            const pContainer = document.getElementById('marcus-plot-container');
+            rContainer.innerHTML = '<div class="flex justify-center py-4"><div class="spinner border-t-emerald-500"></div></div>';
+            pContainer.innerHTML = '<div class="spinner border-t-emerald-500"></div>';
+
+            try {
+                // Fetch metrics
+                const r1 = await fetch('/api/marcus/compute', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reqBody)
+                });
+                if(r1.ok) {
+                    const metrics = await r1.json();
+                    rContainer.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl p-4 text-center">
+                                <div class="text-[var(--text-muted)] text-sm mb-1">ΔG</div>
+                                <div class="text-xl font-bold text-[var(--text-heading)]">${metrics.dG.toFixed(2)}</div>
+                                <div class="text-xs text-[var(--text-muted)] opacity-50">${unit}</div>
+                            </div>
+                            <div class="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl p-4 text-center">
+                                <div class="text-[var(--text-muted)] text-sm mb-1">ΔG<sup>‡</sup> (forward)</div>
+                                <div class="text-xl font-bold text-[var(--text-heading)]">${metrics.dG_activation.toFixed(2)}</div>
+                                <div class="text-xs text-[var(--text-muted)] opacity-50">${unit}</div>
+                            </div>
+                            <div class="bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl p-4 text-center">
+                                <div class="text-[var(--text-muted)] text-sm mb-1">ΔG<sup>‡</sup> (backward)</div>
+                                <div class="text-xl font-bold text-[var(--text-heading)]">${metrics.dG_activation_backEnT.toFixed(2)}</div>
+                                <div class="text-xs text-[var(--text-muted)] opacity-50">${unit}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // Fetch plot
+                const r2 = await fetch('/api/marcus/plot', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(reqBody)
+                });
+                if (r2.ok) {
+                    const blob = await r2.blob();
+                    const url = URL.createObjectURL(blob);
+
+                    let symmWarning = '';
+                    if (r2.headers.get('X-Symmetric-Approx') === 'true') {
+                        symmWarning = `<div class="bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 p-3 rounded-lg mb-4 text-sm font-medium">⚠️ Symmetric approximation used (reason: ${r2.headers.get('X-Symmetric-Reason')}).</div>`;
+                    }
+
+                    pContainer.innerHTML = symmWarning + `<img src="${url}" class="w-full h-auto rounded" style="max-height: 500px; object-fit: contain;" />`;
+                }
+            } catch(e) {
+                console.error("Marcus analysis error", e);
+                rContainer.innerHTML = `<div class="text-red-400 p-4">Error computing metrics</div>`;
+                pContainer.innerHTML = `<div class="text-red-400 p-4">Error loading plot</div>`;
+            }
+        }
+
+        // Re-run Marcus analysis on unit change
+        document.getElementById('unit-select').addEventListener('change', () => {
+            const container = document.getElementById('main-container');
+            if (container.classList.contains('has-marcus')) {
+                runMarcusAnalysis();
+            }
+        });
 
         // Setup initial theme mapping
         const savedTheme = localStorage.getItem('theme') || 'light';
