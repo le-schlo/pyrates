@@ -510,6 +510,9 @@
                      <div class="p-0">
                          <iframe id="ketcher-iframe" src="/static/ketcher/index.html"></iframe>
                      </div>
+                     <div id="ketcher-error-box" class="hidden px-4 py-2 bg-red-500/10 text-red-500 text-xs font-semibold border-t border-red-500/30">
+                         Error: Multiple molecules detected. Please draw only one molecule.
+                     </div>
                      <div class="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)]">
                          <span class="text-xs text-[var(--text-muted)]">Use Ketcher to draw, then load SMILES</span>
                          <button onclick="getSmilesFromKetcher()" class="text-xs font-semibold bg-[#8b5cf6] text-white border border-[#8b5cf6] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed] transition-colors">
@@ -544,7 +547,7 @@
                     </div>
                 </div>
                 <!-- Action to open Marcus Theory -->
-                <button id="btn-marcus" class="btn-sleek hidden mt-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 shadow-emerald-500/30" onclick="toggleMarcusTheory(event)">
+                <button id="btn-marcus" class="btn-sleek hidden mt-4" onclick="toggleMarcusTheory(event)">
                     Marcus Theory Analysis
                 </button>
             </div>
@@ -694,8 +697,8 @@
         function prefetchInitialPlots() {
             const vars = [
                 {valKey: 'triplet_energy_adiabatic', name: 'Triplet energy (adiabatic)'},
-                {valKey: 'lamda_S_T', name: '(S†→T)'},
-                {valKey: 'lamda_T_S', name: '(T†→S)'}
+                {valKey: 'lamda_S_T', name: 'Reorganization Energy (S→T)'},
+                {valKey: 'lamda_T_S', name: 'Reorganization Energy (T→S)'}
             ];
             window.appData.forEach(row => {
                 vars.forEach(v => prefetchModePlot(row, v.valKey, v.name));
@@ -873,8 +876,15 @@
                 }
                 const smiles = await ketcher.getSmiles();
                 const inputArea = document.getElementById('smiles-input');
+                const errorBox = document.getElementById('ketcher-error-box');
 
                 if (smiles) {
+                    if (smiles.includes('.')) {
+                        errorBox.classList.remove('hidden');
+                        return;
+                    } else {
+                        errorBox.classList.add('hidden');
+                    }
                     // Append if there's already content, otherwise replace
                     if (inputArea.value.trim().length > 0) {
                         inputArea.value = inputArea.value.trim() + '\n' + smiles;
@@ -1031,8 +1041,8 @@
                         <span style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-[var(--text-main)]">${row.smiles}</span>
                     </td>
                     <td>${cellVal(row._originalIdx, row, 'triplet_energy_adiabatic', 'Triplet energy (adiabatic)')}</td>
-                    <td>${cellVal(row._originalIdx, row, 'lamda_S_T', 'Reorganization Energy S→T')}</td>
-                    <td>${cellVal(row._originalIdx, row, 'lamda_T_S', 'Reorganization Energy T→S')}</td>
+                    <td>${cellVal(row._originalIdx, row, 'lamda_S_T', 'Reorganization Energy (S→T)')}</td>
+                    <td>${cellVal(row._originalIdx, row, 'lamda_T_S', 'Reorganization Energy (T→S)')}</td>
                 `;
                 tbody.appendChild(tr);
             });
