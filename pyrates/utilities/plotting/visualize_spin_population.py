@@ -129,7 +129,13 @@ def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb
             ],
             cmin=cmin, cmax=cmax, color=[cmin],
             showscale=True,
-            colorbar=dict(title=label, thickness=15, len=0.75),
+            colorbar=dict(
+                title=label, 
+                thickness=15, 
+                len=0.75,
+                tickfont=dict(color="#94a3b8"),
+                titlefont=dict(color="#f8fafc")
+            ),
         ),
         hoverinfo="skip", showlegend=False,
     ))
@@ -139,8 +145,9 @@ def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb
         yaxis=dict(range=[0, 500], visible=False, scaleanchor="x"),
         margin=dict(l=0, r=0, t=0, b=0),
         width=480, height=400,
-        plot_bgcolor="white",
-        hoverlabel=dict(bgcolor="white", font_size=13),
+        plot_bgcolor="rgba(0,0,0,0)",
+        paper_bgcolor="rgba(0,0,0,0)",
+        hoverlabel=dict(bgcolor="#1e293b", font_size=13, font_color="#f8fafc", bordercolor="#334155"),
     )
 
     return fig
@@ -157,8 +164,9 @@ def uncertainty_to_alpha(value, alpha_max=0.8, uncertainty_factor=2, rgb=[0, 64,
 def load_acs_style():
     drawer = rdMolDraw2D.MolDraw2DCairo(500, 500)
     opts = drawer.drawOptions()
-    opts.useBWAtomPalette()
-    opts.backgroundColour = (1, 1, 1)
+    # Dark mode layout
+    opts.clearBackground = False
+    opts.updateAtomPalette({k: (0.95, 0.95, 0.95) for k in range(0, 120)})
     opts.bondLineWidth = 3.0
     opts.minFontSize = 32
     opts.maxFontSize = 42

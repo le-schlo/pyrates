@@ -124,7 +124,19 @@ def plot_mode_distribution_single(
     unit: str,
     target_value: float = None,
 ):
+    # Use dark styling for sleek mode
+    plt.style.use('dark_background')
+    
     fig, ax = plt.subplots(figsize=(5, 3))
+    
+    # Custom background colors to match Slate 900 tailwind theme (#0f172a)
+    bg_color = '#0f172a'
+    fg_color = '#f8fafc'
+    grid_color = '#334155'
+    
+    fig.patch.set_facecolor(bg_color)
+    ax.set_facecolor(bg_color)
+    
     cmap = plt.get_cmap("viridis")
 
     mu_mol = np.array(mu)
@@ -139,28 +151,35 @@ def plot_mode_distribution_single(
     for i in np.argsort(pi_mol):
         color_val = (pi_mol[i] - pi_mol.min()) / (pi_mol.max() - pi_mol.min() + 1e-8)
         y = norm.pdf(x_range, mu_mol[i], sigma_mol[i]) * pi_mol[i]
-        ax.fill_between(x_range, y, alpha=0.5, color=cmap(color_val), label=f'Mode {i+1} (π={pi_mol[i]:.2f})')
+        ax.fill_between(x_range, y, alpha=0.5, color=cmap(color_val), label=f'Mode {i+1} (€={pi_mol[i]:.2f})')
 
     y_combined = np.sum([norm.pdf(x_range, mu_mol[i], sigma_mol[i]) * pi_mol[i] for i in range(n_components)], axis=0)
-    ax.plot(x_range, y_combined, color='black', linestyle='--', linewidth=1.5, label='Combined PDF')
+    ax.plot(x_range, y_combined, color=fg_color, linestyle='--', linewidth=1.5, label='Combined PDF')
 
     if target_value is not None:
-        ax.axvline(target_value, color='red', linewidth=1.5, label=f'True: {target_value:.2f}')
+        ax.axvline(target_value, color='#ef4444', linewidth=1.5, label=f'True: {target_value:.2f}')
 
-    ax.axvline(predicted_value, color='green', linestyle='--', linewidth=1.5, label=f'Predicted: {predicted_value:.2f}')
+    ax.axvline(predicted_value, color='#10b981', linestyle='--', linewidth=1.5, label=f'Predicted: {predicted_value:.2f}')
 
     lower, upper = predicted_value - uncertainty, predicted_value + uncertainty
-    ax.axvline(lower, color='green', linestyle=':', linewidth=1)
-    ax.axvline(upper, color='green', linestyle=':', linewidth=1)
+    ax.axvline(lower, color='#10b981', linestyle=':', linewidth=1)
+    ax.axvline(upper, color='#10b981', linestyle=':', linewidth=1)
     y_lim = ax.get_ylim()
-    ax.fill_betweenx(y_lim, lower, upper, color='green', alpha=0.15, label=f'±{uncertainty:.2f}')
+    ax.fill_betweenx(y_lim, lower, upper, color='#10b981', alpha=0.15, label=f'{uncertainty:.2f}')
     ax.set_ylim(y_lim)
 
-    ax.set_title(target_name)
-    ax.set_xlabel(f'Value [{unit}]')
-    ax.set_ylabel('Density')
-    ax.legend(fontsize=7)
-    ax.grid(True, linestyle='--', linewidth=0.5)
+    ax.set_title(target_name, color=fg_color)
+    ax.set_xlabel(f'Value [{unit}]', color=fg_color)
+    ax.set_ylabel('Density', color=fg_color)
+    ax.tick_params(colors=fg_color)
+    for spine in ax.spines.values():
+        spine.set_color(grid_color)
+
+    ax.legend(fontsize=7, facecolor='#1e293b', edgecolor=grid_color)
+    ax.grid(True, linestyle='--', linewidth=0.5, color=grid_color)
     fig.tight_layout()
 
+    # Reset default style so it doesn't affect other global scripts if any
+    plt.style.use('default')
+    
     return fig
