@@ -6,10 +6,17 @@ from typing import List
 import uvicorn
 import pandas as pd
 from pathlib import Path
+import io
+import json
+import base64
+from fastapi.responses import Response
 
 # Note: assuming pyrates is in PYTHONPATH
 from pyrates.webapp.webapp.routes import predict
 from pyrates.webapp.science_utils.smiles_utils import is_valid_smiles, canonicalize_smiles
+from pyrates.utilities.plotting.visualize_spin_population import visualize_density_interactive, visualize_density
+from pyrates.utilities.plotting.plot_modes import plot_mode_distribution_single
+import matplotlib.pyplot as plt
 
 app = FastAPI(title="PyRates REST API")
 
@@ -46,6 +53,53 @@ async def api_predict(request: PredictRequest):
         df = predict(valid)
         results = df.to_dict(orient="records")
         return {"results": results, "invalid": invalid}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class PlotModeRequest(BaseModel):
+    mu: List[float]
+    sigma: List[float]
+    pi: List[float]
+    predicted_value: float
+    uncertainty: float
+    target_name: str
+    unit: str
+
+@app.post("/api/plot/mode")
+async def api_plot_mode(request: PlotModeRequest):
+    try:
+        fig = plot_mode_distribution_single(
+            mu=request.mu,
+            sigma=request.sigma,
+            pi=request.pi,
+            predicted_value=request.predicted_value,
+            uncertainty=request.uncertainty,
+            target_name=request.target_name,
+            unit=request.unit
+        )
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", bbox_inches="tight", dpi=150)
+        plt.close(fig)
+        buf.seek(0)
+        return Response(content=buf.getvalue(), media_type="image/png")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+class PlotSpinRequest(BaseModel):
+    smiles: str
+    spin_population: List[float]
+    uncertainty: List[float] = None
+    show_uncertainty: bool = False
+
+@app.post("/api/plot/spin")
+async def api_plot_spin(request: PlotSpinRequest):
+    try:
+        fig = visualize_density_interactive(
+            request.smiles, 
+            request.spin_population, 
+            request.uncertainty if request.show_uncertainty else None
+        )
+        return Response(content=fig.to_json(), media_type="application/json")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

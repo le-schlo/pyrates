@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Plotly -->
+    <script src="https://cdn.plot.ly/plotly-2.32.0.min.js"></script>
     <style>
         :root {
             --bg-body: #020617;
@@ -181,9 +183,48 @@
             border: none;
             background: #fff;
         }
+
+        /* Modal Styles for Full Analysis */
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px);
+            display: none; align-items: center; justify-content: center; z-index: 10000;
+        }
+        .modal.active { display: flex; }
+        .modal-content {
+            background: var(--bg-surface); width: 90%; max-width: 1200px; max-height: 90vh;
+            border: 1px solid var(--border-color); border-radius: 1.25rem;
+            display: flex; flex-direction: column; overflow: hidden;
+            box-shadow: 0 20px 40px -20px rgba(0,0,0,0.8);
+        }
+        .modal-header {
+            padding: 1.5rem; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center;
+        }
+        .modal-body {
+            padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 2rem;
+        }
+        .close-btn { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
+        .close-btn:hover { color: #fff; }
     </style>
 </head>
 <body>
+
+    <!-- Modal for Detailed Analysis -->
+    <div id="analysis-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2" id="modal-title">
+                    <svg class="w-6 h-6 text-[#0ea5e9]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                    Detailed Analysis
+                </h3>
+                <button class="close-btn" onclick="closeModal()">
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-body-content">
+                <!-- Analysis Content will be injected here -->
+            </div>
+        </div>
+    </div>
 
     <div class="loader-overlay" id="loader">
         <div class="spinner"></div>
@@ -235,7 +276,7 @@
         <div class="glass-panel h-max">
             <div class="panel-header">
                 <svg class="w-5 h-5 text-[#6366f1]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
-                Analysis Results
+                <div class="flex-1">Analysis Results</div>
             </div>
             <div class="panel-body">
                 <div id="results-container" class="overflow-x-auto">
@@ -250,6 +291,131 @@
     </div>
 
     <script>
+        window.appData = []; // Store latest results globally
+
+        function closeModal() {
+            document.getElementById('analysis-modal').classList.remove('active');
+        }
+
+        async function injectAnalysis(containerEl, row) {
+            containerEl.innerHTML = `
+                <div class="flex justify-center my-8">
+                    <div class="spinner border-t-[#6366f1]"></div>
+                </div>
+            `;
+
+            // Generate standard variables
+            const vars = [
+                {id: 'eta', name: 'Triplet energy (adiabatic)', valKey: 'triplet_energy_adiabatic'},
+                {id: 'lst', name: '(S†→T)', valKey: 'lamda_S_T'},
+                {id: 'lts', name: '(T†→S)', valKey: 'lamda_T_S'}
+            ];
+
+            const plotsHTMLArray = vars.map(v => `
+                <div class="bg-[rgba(255,255,255,0.02)] border border-[var(--border-color)] rounded-xl p-4 flex flex-col items-center">
+                    <div class="text-sm font-bold text-center text-white mb-2 w-full flex justify-between">
+                        <span>${v.name}</span>
+                        <span class="text-[#0ea5e9]">${Number(row[v.valKey]).toFixed(2)} kcal/mol</span>
+                    </div>
+                    <img id="img-${v.id}" class="w-full max-w-[300px] h-auto rounded opacity-0 transition-opacity duration-300" />
+                </div>
+            `).join('');
+
+            const analysisGrid = `
+                <div>
+                   <h4 class="text-lg font-bold text-white mb-4 border-b border-[var(--border-color)] pb-2">Prediction Modes (MDN)</h4>
+                   <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+                       ${plotsHTMLArray}
+                   </div>
+
+                   <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2">
+                       <h4 class="text-lg font-bold text-white">Spin Density Distribution</h4>
+                       <label class="flex items-center gap-2 cursor-pointer text-sm font-medium text-[var(--text-muted)] hover:text-white transition-colors">
+                           <input type="checkbox" id="toggle-unc-${row.smiles.replace(/\W/g,'_')}" class="accent-[#0ea5e9] w-4 h-4 rounded">
+                           Show Uncertainty
+                       </label>
+                   </div>
+                   <div class="bg-white rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+                       <div id="spin-plotly" class="w-full h-[500px] flex items-center justify-center">
+                           <div class="spinner border-t-[#6366f1]"></div>
+                       </div>
+                   </div>
+                </div>
+            `;
+            containerEl.innerHTML = analysisGrid;
+
+            // Load mode plots
+            for (const v of vars) {
+                try {
+                    const reqBody = {
+                        mu: row[`${v.valKey}_mdn_mu`],
+                        sigma: row[`${v.valKey}_mdn_sigma`],
+                        pi: row[`${v.valKey}_mdn_pi`],
+                        predicted_value: row[v.valKey],
+                        uncertainty: row[`${v.valKey}_uncertainty`],
+                        target_name: v.name,
+                        unit: 'kcal/mol'
+                    };
+                    const r = await fetch('/api/plot/mode', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(reqBody)
+                    });
+                    if(r.ok) {
+                        const blob = await r.blob();
+                        const img = document.getElementById(`img-${v.id}`);
+                        img.src = URL.createObjectURL(blob);
+                        img.onload = () => img.classList.remove('opacity-0');
+                    }
+                } catch(e) { console.error("Plotly Mode error", e); }
+            }
+
+            // Load interactive spin density
+            const loadSpinPlot = async (showUnc) => {
+                const spDiv = document.getElementById('spin-plotly');
+                spDiv.innerHTML = '<div class="spinner border-t-[#6366f1]"></div>';
+                try {
+                    const r = await fetch('/api/plot/spin', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                            smiles: row.smiles,
+                            spin_population: row.spin_map,
+                            uncertainty: row.spin_map_uncertainty,
+                            show_uncertainty: showUnc
+                        })
+                    });
+                    if(r.ok) {
+                        const figObj = await r.json();
+                        spDiv.innerHTML = '';
+                        Plotly.newPlot(spDiv, figObj.data, figObj.layout, {responsive: true, displayModeBar: false});
+                    }
+                } catch(e) { console.error("Plotly Spin error", e); spDiv.innerHTML="<p class='text-black'>Failed to load plot</p>"; }
+            };
+
+            await loadSpinPlot(false);
+
+            // Checkbox listener
+            const cbx = document.getElementById(`toggle-unc-${row.smiles.replace(/\W/g,'_')}`);
+            if(cbx) {
+                cbx.addEventListener('change', (e) => {
+                    loadSpinPlot(e.target.checked);
+                });
+            }
+        }
+
+        function openAnalysisModal(idx) {
+            const row = window.appData[idx];
+            if(!row) return;
+            const modal = document.getElementById('analysis-modal');
+            document.getElementById('modal-title').innerHTML = `
+                <svg class="w-6 h-6 text-[#0ea5e9]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
+                Analysis for <span class="font-mono text-sm ml-2 px-2 py-1 bg-white/10 rounded">${row.smiles}</span>
+            `;
+            modal.classList.add('active');
+            injectAnalysis(document.getElementById('modal-body-content'), row);
+        }
+
         async function getSmilesFromKetcher() {
             try {
                 const ketcherFrame = document.getElementById('ketcher-iframe');
@@ -304,6 +470,7 @@
                     throw new Error(data.detail || data.error || 'Server error');
                 }
 
+                window.appData = data.results;
                 renderResults(data.results, data.invalid);
 
             } catch (e) {
@@ -345,24 +512,40 @@
                     <th>E_T <span class="text-xs opacity-50">(kcal/mol)</span></th>
                     <th>λ_S_T</th>
                     <th>λ_T_S</th>
+                    ${results.length > 1 ? '<th class="text-right">Actions</th>' : ''}
                 </tr>
             `;
             table.appendChild(thead);
 
             // Body
             const tbody = document.createElement('tbody');
-            results.forEach(row => {
+            results.forEach((row, idx) => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-blue-300 w-1/3">${row.smiles}</td>
                     <td class="font-medium">${Number(row.triplet_energy_adiabatic).toFixed(2)}</td>
                     <td class="font-medium">${Number(row.lamda_S_T).toFixed(2)}</td>
                     <td class="font-medium">${Number(row.lamda_T_S).toFixed(2)}</td>
+                    ${results.length > 1 ? `
+                    <td class="text-right">
+                        <button onclick="openAnalysisModal(${idx})" class="text-xs bg-[var(--bg-body)] border border-[var(--border-color)] hover:border-[#6366f1] text-[#94a3b8] hover:text-[#f8fafc] transition-all px-3 py-1.5 rounded bg-opacity-50 inline-flex items-center gap-2">
+                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                           Detailed Analysis
+                        </button>
+                    </td>` : ''}
                 `;
                 tbody.appendChild(tr);
             });
             table.appendChild(tbody);
             container.appendChild(table);
+
+            // If only one result, automatically display analysis directly below
+            if(results.length === 1) {
+                const singleAnalysisDiv = document.createElement('div');
+                singleAnalysisDiv.className = 'mt-8 border-t border-[var(--border-color)] pt-8';
+                container.appendChild(singleAnalysisDiv);
+                injectAnalysis(singleAnalysisDiv, results[0]);
+            }
         }
     </script>
 </body>
