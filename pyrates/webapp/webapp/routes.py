@@ -27,19 +27,36 @@ def predict(smiles_list: Iterable[str]) -> pd.DataFrame:
       - lamda_T_S                        (in kcal/mol)
       - spin_map                         (dict: atom_idx -> spin density) [internal usage, hidden in table]
     """
+    from rdkit import Chem
 
     graph_output, node_output = collect_results(smiles_list)
 
 
     graph_predictions, graph_uncertainties = graph_output['predictions'], graph_output['uncertainties']
     g_mu, g_sigma, g_pi = graph_output['mdn_params']['mu'], graph_output['mdn_params']['sigma'], graph_output['mdn_params']['pi']
-    node_predictions, node_uncertainties = node_output['predictions'], node_output['uncertainties']
-    n_mu, n_sigma, n_pi = node_output['mdn_params']['mu'], node_output['mdn_params']['sigma'], node_output['mdn_params']['pi']
+    node_predictions_flat, node_uncertainties_flat = node_output['predictions'], node_output['uncertainties']
+    n_mu_flat, n_sigma_flat, n_pi_flat = node_output['mdn_params']['mu'], node_output['mdn_params']['sigma'], node_output['mdn_params']['pi']
 
 
-    if len(smiles_list) == 1:
-        node_predictions = [node_predictions]
-        node_uncertainties = [node_uncertainties]
+    # Calculate number of atoms per molecule
+    num_atoms_list = []
+    for s in smiles_list:
+        mol = Chem.MolFromSmiles(s)
+        if mol is not None:
+             num_atoms_list.append(mol.GetNumAtoms())
+        else:
+             num_atoms_list.append(0)
+
+    # Split flat node predictions by molecule
+    node_predictions = []
+    node_uncertainties = []
+    start_idx = 0
+    for num_atoms in num_atoms_list:
+        end_idx = start_idx + num_atoms
+        node_predictions.append(node_predictions_flat[start_idx:end_idx])
+        node_uncertainties.append(node_uncertainties_flat[start_idx:end_idx])
+        start_idx = end_idx
+
     rows = []
     for i, smiles in enumerate(smiles_list):
         rows.append(
@@ -62,9 +79,6 @@ def predict(smiles_list: Iterable[str]) -> pd.DataFrame:
                 "lamda_T_S_mdn_pi": g_pi[i,2,:].tolist(),
                 "spin_map": np.array(node_predictions[i]).flatten().tolist(),
                 "spin_map_uncertainty": np.array(node_uncertainties[i]).flatten().tolist(),
-                "spin_map_mdn_mu": np.array(node_predictions[i]).flatten().tolist(),
-                "spin_map_mdn_sigma": np.array(node_predictions[i]).flatten().tolist(),
-                "spin_map_mdn_pi": np.array(node_predictions[i]).flatten().tolist(),
             }
         )
 
@@ -76,7 +90,7 @@ def predict(smiles_list: Iterable[str]) -> pd.DataFrame:
 def reset_results():
     """Helper to clear session-state results."""
     try:
-        import streamlit as st
+        import streamlit as st;
 
         for k in ["smiles_list", "results_df", "last_run_ts"]:
             if k in st.session_state:

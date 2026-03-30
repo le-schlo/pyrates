@@ -131,6 +131,7 @@ def plot_reaction_coordinate(
     *,
     render: bool = False,
     show: bool = False,
+    theme: str = "light",
 ) -> Dict[str, Any]:
     """Plot the Marcus-theory parabolas for a triplet–triplet energy transfer reaction.
 
@@ -197,7 +198,24 @@ def plot_reaction_coordinate(
             x_intersect = 0.5
 
     # --- 3. Plotting with robust scaling ---
-    # x-scale: always include 0, 1 and the TS position
+
+    if theme == "dark":
+        plt.style.use('dark_background')
+        bg_color = '#0f172a'
+        fg_color = '#f8fafc'
+        grid_color = '#334155'
+        legend_bg = '#1e293b'
+    else:
+        plt.style.use('default')
+        bg_color = '#ffffff'
+        fg_color = '#0f172a'
+        grid_color = '#e2e8f0'
+        legend_bg = '#ffffff'
+
+    reactants_color = "#3b82f6"
+    products_color = "#ef4444"
+    act_color = "#10b981"
+
     key_x_points = [0.0, 1.0, float(x_intersect)]
     x_min_core = min(key_x_points)
     x_max_core = max(key_x_points)
@@ -214,9 +232,13 @@ def plot_reaction_coordinate(
     G_initial = lambda_f * x_coords**2
     G_final = lambda_r * (x_coords - 1) ** 2 + dG
 
-    plt.figure(figsize=(10, 7))
-    plt.plot(x_coords, G_initial, "b-", label="Reactants Parabola")
-    plt.plot(x_coords, G_final, "r-", label="Products Parabola")
+    fig, ax = plt.subplots(figsize=(10, 7))
+    
+    fig.patch.set_facecolor(bg_color)
+    ax.set_facecolor(bg_color)
+
+    ax.plot(x_coords, G_initial, "-", color=reactants_color, linewidth=2, label="Reactants Parabola")
+    ax.plot(x_coords, G_final, "-", color=products_color, linewidth=2, label="Products Parabola")
 
     # y-scale: include all relevant energy values
     key_y_points = [
@@ -235,130 +257,95 @@ def plot_reaction_coordinate(
     ymin = ymin_core - 0.15 * y_span
     ymax = ymax_core + 0.3 * y_span
 
-    plt.ylim(ymin, ymax)
-    plt.xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_xlim(xmin, xmax)
 
     # ΔG line (vertical at x = 1)
-    plt.plot([1, 1], [0, dG], "-", color="black")
-    plt.plot(
-        [1, 1],
-        [0, dG],
-        marker="_",
-        markersize=12,
-        linestyle="None",
-        color="black",
-        markeredgewidth=2,
-    )
-    plt.text(
+    ax.plot([1, 1], [0, dG], "-", color=fg_color, alpha=0.5, linewidth=1.5)
+    ax.text(
         1.05,
         dG / 2,
         f"ΔG = {dG:.2f} {unit}",
         va="center",
         ha="left",
         fontsize=12,
-        fontweight="bold",
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        color=fg_color,
+        fontweight="bold"
     )
 
     # ΔG‡ (forward) at x_intersect
-    plt.plot([x_intersect, x_intersect], [0, dG_activation], "-", color="green")
-    plt.plot(
-        [x_intersect, x_intersect],
-        [0, dG_activation],
-        marker="_",
-        markersize=12,
-        linestyle="None",
-        color="green",
-        markeredgewidth=2,
-    )
-    plt.text(
+    ax.plot([x_intersect, x_intersect], [0, dG_activation], "-", color=act_color, linewidth=1.5)
+    ax.text(
         x_intersect,
         dG_activation * 1.05,
         f"ΔG‡ = {dG_activation:.2f} {unit}",
         va="bottom",
         ha="center",
         fontsize=12,
-        color="green",
-        fontweight="bold",
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        color=act_color,
+        fontweight="bold"
     )
 
     # λ_forward at x = 1
-    plt.plot([1, 1], [0, lambda_f], "-", color="blue")
-    plt.plot(
-        [1, 1],
-        [0, lambda_f],
-        marker="_",
-        markersize=12,
-        linestyle="None",
-        color="blue",
-        markeredgewidth=2,
-    )
-    plt.text(
+    ax.plot([1, 1], [0, lambda_f], "-", color=reactants_color, linewidth=1.5)
+    ax.text(
         1.05,
         lambda_f / 2,
         f"λ_forward = {lambda_f:.2f} {unit}",
         va="center",
         ha="left",
         fontsize=12,
-        color="blue",
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        color=reactants_color
     )
 
     # λ_reverse at x = 0 (from the product level)
-    plt.plot([0, 0], [dG, lambda_r + dG], "-", color="red")
-    plt.plot(
-        [0, 0],
-        [dG, lambda_r + dG],
-        marker="_",
-        markersize=12,
-        linestyle="None",
-        color="red",
-        markeredgewidth=2,
-    )
-    plt.text(
+    ax.plot([0, 0], [dG, lambda_r + dG], "-", color=products_color, linewidth=1.5)
+    ax.text(
         -0.05,
         dG + (lambda_r / 2),
         f"λ_reverse = {lambda_r:.2f} {unit}",
         va="center",
         ha="right",
         fontsize=12,
-        color="red",
-        bbox=dict(boxstyle="round", facecolor="white", alpha=0.8),
+        color=products_color
     )
 
-    fig = plt.gcf()
-    ax = plt.gca()
-    ax.set_title("Marcus Theory Plot for Energy Transfer", fontsize=16)
-    ax.set_xlabel("Normalized Reaction Coordinate", fontsize=14)
-    ax.set_ylabel("ΔG", fontsize=14)
-    ax.axhline(0, color="grey", linestyle="--", linewidth=0.7)
-    ax.grid(True, linestyle=":", alpha=0.6)
-    ax.legend(loc="best", fontsize=12)
+    ax.set_title("Marcus Theory Plot for Energy Transfer", color=fg_color, fontsize=16)
+    ax.set_xlabel(f"Normalized Reaction Coordinate", color=fg_color, fontsize=14)
+    ax.set_ylabel(f"ΔG [{unit}]", color=fg_color, fontsize=14)
+    ax.tick_params(colors=fg_color)
+    
+    for spine in ax.spines.values():
+        spine.set_color(grid_color)
+        
+    ax.axhline(0, color=grid_color, linestyle="--", linewidth=1.0)
+    ax.grid(True, linestyle="--", linewidth=0.5, color=grid_color)
+    
+    ax.legend(fontsize=12, facecolor=legend_bg, edgecolor=grid_color, loc="best")
+        
     fig.tight_layout()
 
-    if render:
-        try:
-            fig.canvas.draw_idle()
-        except Exception:
-            pass
-    if show:
-        plt.show()
+    # Reset default style so it doesn't affect other global scripts if any
+    #plt.style.use('default')
 
-    result: Dict[str, Any] = {
+    result = {
         "fig": fig,
-        "ax": ax,
-        "dG": dG,
-        "dG_activation_forward": dG_activation,
-        "dG_activation_backward": dG_activation_backward,
-        "lambda_forward": lambda_f,
-        "lambda_reverse": lambda_r,
-        "x_intersect": x_intersect,
-        "xlim": (xmin, xmax),
-        "ylim": (ymin, ymax),
+        "limits": {"xmin": xmin, "xmax": xmax, "ymin": ymin, "ymax": ymax},
+        "energies": {"dG": dG, "activation_forward": dG_activation, "activation_backward": dG_activation_backward},
         "symmetric_approx": symmetric_flag,
         "symmetric_reason": reason,
+        "x_intersect": x_intersect,
     }
+
+    if render:
+        # We handle plotting in Streamlit side, no blocking `show()` inside the library function usually.
+        # Although if show -> plt.show()
+        if show:
+            plt.show()
+
+    # Reset style
+    plt.style.use('default')
+
     return result
 
 

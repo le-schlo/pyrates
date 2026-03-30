@@ -110,6 +110,41 @@ async def api_plot_spin(request: PlotSpinRequest):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+class StructureRequest(BaseModel):
+    smiles: str
+    theme: str = "light"
+
+@app.post("/api/structure")
+async def api_structure(request: StructureRequest):
+    try:
+        from rdkit import Chem
+        from rdkit.Chem.Draw import rdMolDraw2D
+        mol = Chem.MolFromSmiles(request.smiles)
+        if mol is None:
+            raise ValueError("Invalid SMILES")
+        
+        # Consistent with load_acs_style but uses SVG for web view
+        drawer = rdMolDraw2D.MolDraw2DSVG(200, 150)
+        opts = drawer.drawOptions()
+        opts.clearBackground = False
+        if request.theme == "dark":
+            opts.updateAtomPalette({k: (0.95, 0.95, 0.95) for k in range(0, 120)})
+        else:
+            opts.updateAtomPalette({k: (0.05, 0.05, 0.05) for k in range(0, 120)})
+        opts.bondLineWidth = 2.0
+        opts.minFontSize = 20
+        opts.maxFontSize = 30
+        opts.padding = 0.05
+        
+        drawer.DrawMolecule(mol)
+        drawer.FinishDrawing()
+        svg = drawer.GetDrawingText()
+        # Clean up the xml namespace sometimes included multiple times
+        svg = svg.replace('xmlns:svg="http://www.w3.org/2000/svg"', '')
+        return Response(content=svg, media_type="image/svg+xml")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/api/photocatalysts")
 async def api_photocatalysts():
     names = list_photocatalyst_names()
@@ -132,6 +167,7 @@ class MarcusRequest(BaseModel):
     quencher_lambda_S_T: float
     quencher_lambda_T_S: float
     unit: str = "kcal/mol"
+    theme: str = "light"
 
 @app.post("/api/marcus/compute")
 async def api_marcus_compute(request: MarcusRequest):
@@ -163,6 +199,7 @@ async def api_marcus_plot(request: MarcusRequest):
             unit=request.unit,
             render=True,
             show=False,
+            theme=request.theme,
         )
         fig = res.get("fig", None)
         if fig is None:

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PyRates | EnTdecker 2.0</title>
+    <title>EnTdecker</title>
     <!-- Sleek Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -30,26 +30,6 @@
             --modal-overlay: rgba(255, 255, 255, 0.8);
             --btn-ghost-bg: rgba(0,0,0,0.05);
             --btn-ghost-hover: rgba(0,0,0,0.1);
-        }
-
-        [data-theme="dark"] {
-            /* Dark Theme */
-            --bg-body: #020617;
-            --bg-surface: #0f172a;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --text-heading: #ffffff;
-            --accent-gradient: linear-gradient(135deg, #0ea5e9 0%, #6366f1 100%);
-            --border-color: rgba(255, 255, 255, 0.08);
-            --ring-color: #6366f1;
-            --input-bg: rgba(255, 255, 255, 0.03);
-            --input-bg-focus: rgba(255, 255, 255, 0.05);
-            --glass-shadow: 0 20px 40px -20px rgba(0,0,0,0.5);
-            --bg-gradient: radial-gradient(circle at 50% 0%, rgba(99, 102, 241, 0.1) 0%, transparent 50%);
-            --modal-bg: rgba(2, 6, 23, 0.4);
-            --modal-overlay: rgba(0, 0, 0, 0.8);
-            --btn-ghost-bg: rgba(255,255,255,0.05);
-            --btn-ghost-hover: rgba(255,255,255,0.1);
         }
 
         body {
@@ -289,11 +269,6 @@
             background: #ffffff;
             transition: filter 0.3s;
         }
-        [data-theme="dark"] #ketcher-iframe {
-            background: #0f172a;
-            /* Invert the bright Ketcher interface to match the dark theme */
-            filter: invert(0.92) hue-rotate(180deg);
-        }
 
         /* Modal Styles for Full Analysis */
         .modal {
@@ -316,28 +291,6 @@
         .close-btn { color: var(--text-muted); cursor: pointer; transition: color 0.2s; }
         .close-btn:hover { color: var(--text-heading); }
 
-        .theme-toggle-btn {
-            position: absolute;
-            top: 2rem;
-            right: 2rem;
-            background: var(--bg-surface);
-            border: 1px solid var(--border-color);
-            color: var(--text-main);
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            box-shadow: var(--glass-shadow);
-            transition: all 0.2s;
-        }
-        .theme-toggle-btn:hover {
-            transform: scale(1.1);
-        }
-        [data-theme="dark"] .icon-sun { display: none; }
-        [data-theme="light"] .icon-moon { display: none; }
 
         /* Custom Toggle Switch for Uncertainty */
         .toggle-switch {
@@ -379,14 +332,91 @@
             transform: translateX(20px);
             background-color: #ffffff;
         }
+
+        /* Floating action menu */
+        .fab-container {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .fab-button {
+            width: 3.5rem;
+            height: 3.5rem;
+            background: var(--accent-gradient);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 14px 0 rgba(99, 102, 241, 0.39);
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .fab-button:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+        }
+
+        .fab-button svg {
+            transition: transform 0.3s ease;
+        }
+
+        .fab-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            opacity: 0;
+            pointer-events: none;
+            transform: translateY(20px) scale(0.9);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: bottom center;
+        }
+
+        .fab-container:hover .fab-menu,
+        .fab-container.active .fab-menu {
+            opacity: 1;
+            pointer-events: all;
+            transform: translateY(0) scale(1);
+        }
+
+        .fab-container:hover .fab-button svg,
+        .fab-container.active .fab-button svg {
+            transform: rotate(45deg);
+        }
+
+        .fab-item {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.75rem 1.25rem;
+            border-radius: 2rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--glass-shadow);
+            white-space: nowrap;
+            transition: all 0.2s ease;
+        }
+
+        .fab-item:hover {
+            background: var(--btn-ghost-hover);
+            transform: translateX(-5px);
+            color: var(--text-heading);
+            border-color: var(--ring-color);
+        }
     </style>
 </head>
 <body>
-
-    <button onclick="toggleTheme()" class="theme-toggle-btn" title="Toggle Theme">
-        <svg class="w-5 h-5 icon-moon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
-        <svg class="w-5 h-5 icon-sun" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-    </button>
 
     <!-- Modal for Mode Plot -->
     <div id="mode-plot-modal" class="modal">
@@ -411,7 +441,37 @@
         <p class="text-sm font-medium tracking-widest text-[#94a3b8] uppercase">Computing Results</p>
     </div>
 
-    <h1 class="title">PyRates / EnTdecker 2.0</h1>
+    <!-- Floating Action Menu -->
+    <div class="fab-container" onclick="this.classList.toggle('active')" tabindex="0">
+        <div class="fab-button">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"></path>
+            </svg>
+        </div>
+        <div class="fab-menu">
+            <a href="https://www.uni-muenster.de/Chemie.oc/glorius/" target="_blank" rel="noopener noreferrer" class="fab-item">
+                <svg class="w-4 h-4 text-[#0ea5e9]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                </svg>
+                Glorius Group
+            </a>
+            <a href="https://github.com/GloriusGroup" target="_blank" rel="noopener noreferrer" class="fab-item">
+                <svg class="w-4 h-4 text-[#8b5cf6]" fill="currentColor" viewBox="0 0 24 24">
+                    <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0112 22.034c-4.425 0-8.18-2.865-9.504-6.839-.092-.5-.217-.682-.483-.682-.237 0-.868.008-1.703.013-2.782-.605-3.369-1.343-3.369-1.343z" clip-rule="evenodd"></path>
+                </svg>
+                GitHub
+            </a>
+            <a href="#" class="fab-item">
+                <svg class="w-4 h-4 text-[#10b981]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                Paper (Coming Soon)
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Title -->
+    <h1 class="title">EnTdecker</h1>
 
     <div id="main-container" class="container-main focus-input">
 
@@ -518,7 +578,7 @@
                     </div>
                 </div>
 
-                <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] [data-theme='dark']:shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-[var(--border-color)]">
+                <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] border border-[var(--border-color)]">
                     <div id="marcus-plot-container" class="w-full min-h-[400px] flex items-center justify-center">
                         <p class="text-sm text-[var(--text-muted)]">Plot will appear here</p>
                     </div>
@@ -739,7 +799,7 @@
                            </label>
                        </div>
                    </div>
-                   <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] [data-theme='dark']:shadow-[0_0_20px_rgba(0,0,0,0.5)] border border-[var(--border-color)]">
+                   <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] border border-[var(--border-color)]">
                        <div id="spin-plotly" class="w-full h-[500px] flex items-center justify-center">
                            <div class="spinner border-t-[var(--ring-color)]"></div>
                        </div>
@@ -784,6 +844,20 @@
             }
         }
 
+        function handleSort(key) {
+            if (!window.sortState) window.sortState = { key: null, asc: true };
+            if (window.sortState.key === key) {
+                if (window.sortState.asc) {
+                    window.sortState.asc = false;
+                } else {
+                    window.sortState = { key: null, asc: true }; // reset
+                }
+            } else {
+                window.sortState.key = key;
+                window.sortState.asc = true;
+            }
+            runRenderResults();
+        }
 
         function runRenderResults() {
             renderResults(window.appData, window.currentInvalid || []);
@@ -889,15 +963,20 @@
             const table = document.createElement('table');
             table.className = 'sleek-table w-full text-left';
 
+            const getSortIcon = (key) => {
+                if (!window.sortState || window.sortState.key !== key) return '<span class="opacity-30 ml-1 text-xs">↕</span>';
+                return window.sortState.asc ? '<span class="text-[#0ea5e9] ml-1 text-xs">▲</span>' : '<span class="text-[#0ea5e9] ml-1 text-xs">▼</span>';
+            };
+
             // Header
             const thead = document.createElement('thead');
             thead.innerHTML = `
                 <tr>
-                    <th>SMILES</th>
-                    <th>E_T <span class="text-xs opacity-50">(${selectedUnit})</span></th>
-                    <th>λ_S_T <span class="text-xs opacity-50">(${selectedUnit})</span></th>
-                    <th>λ_T_S <span class="text-xs opacity-50">(${selectedUnit})</span></th>
-                    ${results.length > 1 ? '<th class="text-right">Actions</th>' : ''}
+                    <th style="width: 130px;"></th>
+                    <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('smiles')">SMILES ${getSortIcon('smiles')}</th>
+                    <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('triplet_energy_adiabatic')">E<sub>T</sub> <span class="text-xs opacity-50">(${selectedUnit})</span> ${getSortIcon('triplet_energy_adiabatic')}</th>
+                    <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('lamda_S_T')">λ<sub>S→T</sub> <span class="text-xs opacity-50">(${selectedUnit})</span> ${getSortIcon('lamda_S_T')}</th>
+                    <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('lamda_T_S')">λ<sub>T→S</sub> <span class="text-xs opacity-50">(${selectedUnit})</span> ${getSortIcon('lamda_T_S')}</th>
                 </tr>
             `;
             table.appendChild(thead);
@@ -911,26 +990,49 @@
                 return `
                 <div class="flex items-center gap-2 whitespace-nowrap">
                     <span class="font-medium flex-1">${convertedVal.toFixed(2)} <span class="text-xs text-[var(--text-muted)] ml-0.5" title="Uncertainty">±${convertedUnc.toFixed(2)}</span></span>
-                    <button onclick="showModePlot(${idx}, '${key}', '${name}')" class="text-[var(--text-muted)] hover:text-[#0ea5e9] transition-colors bg-[var(--btn-ghost-bg)] p-1 rounded hover:bg-[var(--btn-ghost-hover)]" title="View mode distribution">
+                    <button onclick="event.stopPropagation(); showModePlot(${idx}, '${key}', '${name}')" class="text-[var(--text-muted)] hover:text-[#0ea5e9] transition-colors bg-[var(--btn-ghost-bg)] p-1 rounded hover:bg-[var(--btn-ghost-hover)]" title="View mode distribution">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M9 15l3-3 4 4 5-5" /></svg>
                     </button>
                 </div>
             `};
 
-            results.forEach((row, idx) => {
+            // Before sorting, if the original indices are not saved, save them
+            results.forEach((row, originalIdx) => {
+                if(row._originalIdx === undefined) row._originalIdx = originalIdx;
+            });
+
+            // Sort logic setup (assumes window.sortState exists, otherwise defaults)
+            let sortedResults = [...results];
+            if (window.sortState && window.sortState.key) {
+                sortedResults.sort((a, b) => {
+                    const valA = a[window.sortState.key];
+                    const valB = b[window.sortState.key];
+                    if (typeof valA === 'string') {
+                        return window.sortState.asc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    }
+                    return window.sortState.asc ? valA - valB : valB - valA;
+                });
+            }
+
+            sortedResults.forEach((row) => {
                 const tr = document.createElement('tr');
+                tr.className = "cursor-pointer hover:bg-[var(--btn-ghost-bg)] transition-colors";
+                tr.onclick = () => openDetailedAnalysis(row._originalIdx);
+
+                const structId = `struct-preview-${row._originalIdx}`;
+
                 tr.innerHTML = `
-                    <td style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-[var(--text-main)] w-1/3">${row.smiles}</td>
-                    <td>${cellVal(idx, row, 'triplet_energy_adiabatic', 'Triplet energy (adiabatic)')}</td>
-                    <td>${cellVal(idx, row, 'lamda_S_T', '(S†→T)')}</td>
-                    <td>${cellVal(idx, row, 'lamda_T_S', '(T†→S)')}</td>
-                    ${results.length > 1 ? `
-                    <td class="text-right">
-                        <button onclick="openDetailedAnalysis(${idx})" class="text-xs bg-[var(--bg-body)] border border-[var(--border-color)] hover:border-[#6366f1] text-[var(--text-muted)] hover:text-[var(--text-main)] transition-all px-3 py-1.5 rounded inline-flex items-center gap-2">
-                           <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
-                           Detailed Analysis
-                        </button>
-                    </td>` : ''}
+                    <td class="p-2 w-[130px]">
+                        <div id="${structId}" class="w-[120px] h-[80px] flex items-center justify-center bg-[#ffffff] border border-[var(--border-color)] rounded shrink-0 overflow-hidden">
+                            <div class="spinner border-t-[#6366f1] w-4 h-4 border-2"></div>
+                        </div>
+                    </td>
+                    <td class="w-1/4">
+                        <span style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-[var(--text-main)]">${row.smiles}</span>
+                    </td>
+                    <td>${cellVal(row._originalIdx, row, 'triplet_energy_adiabatic', 'Triplet energy (adiabatic)')}</td>
+                    <td>${cellVal(row._originalIdx, row, 'lamda_S_T', '(S†→T)')}</td>
+                    <td>${cellVal(row._originalIdx, row, 'lamda_T_S', '(T†→S)')}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -940,6 +1042,37 @@
             const detailPanel = document.createElement('div');
             detailPanel.id = 'detailed-analysis-panel';
             container.appendChild(detailPanel);
+
+            // Fetch structures asynchronously
+            const fetchStructure = async (smiles, elemId) => {
+                try {
+                    const el = document.getElementById(elemId);
+                    if(!el) return;
+                    const res = await fetch('/api/structure', {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify({ smiles: smiles, theme: "light" })
+                    });
+                    if (res.ok) {
+                        const svgText = await res.text();
+                        el.innerHTML = svgText;
+                        const svgOpt = el.querySelector('svg');
+                        if (svgOpt) {
+                            svgOpt.style.width = '100%';
+                            svgOpt.style.height = '100%';
+                        }
+                    } else {
+                        el.innerHTML = '<span class="text-xs text-red-500">Error</span>';
+                    }
+                } catch(e) {
+                    const el = document.getElementById(elemId);
+                    if(el) el.innerHTML = '<span class="text-xs text-red-500">Error</span>';
+                }
+            };
+
+            sortedResults.forEach((row) => {
+                fetchStructure(row.smiles, `struct-preview-${row._originalIdx}`);
+            });
 
             // If only one result, automatically display analysis directly below
             if(results.length === 1) {
@@ -1082,22 +1215,6 @@
             }
         });
 
-        // Setup initial theme mapping
-        const savedTheme = localStorage.getItem('theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
-
-        function toggleTheme() {
-            const isDark = document.body.getAttribute('data-theme') === 'dark';
-            const nextTheme = isDark ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', nextTheme);
-            localStorage.setItem('theme', nextTheme);
-            window.modePlotCache = {}; // clear cached images on theme switch!
-
-            // Re-render open plots if they exist
-            if (window.appData && window.appData.length > 0) {
-                prefetchInitialPlots();
-            }
-        }
 
         // Close modal when clicking outside
         document.getElementById('mode-plot-modal').addEventListener('click', function(e) {
