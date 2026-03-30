@@ -13,6 +13,12 @@ from pyrates.webapp.science_utils.smiles_utils import is_valid_smiles, canonical
 
 app = FastAPI(title="PyRates REST API")
 
+# Mount static files (like ketcher)
+import os
+static_dir = Path(__file__).parent / "static"
+if static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+
 class PredictRequest(BaseModel):
     smiles: List[str]
 
@@ -50,4 +56,3 @@ async def index():
 
 if __name__ == "__main__":
     uvicorn.run("pyrates.webapp.fastapi_app:app", host="127.0.0.1", port=8000, reload=True)
-

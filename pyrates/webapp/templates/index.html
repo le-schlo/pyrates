@@ -220,10 +220,13 @@
                      Sketcher
                  </div>
                  <div class="p-0">
-                     <iframe id="ketcher-iframe" src="https://lifescience.opensource.epam.com/ketcher/index.html"></iframe>
+                     <iframe id="ketcher-iframe" src="/static/ketcher/index.html"></iframe>
                  </div>
-                 <div class="px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)] text-xs text-[var(--text-muted)]">
-                     Use Ketcher to draw, then export SMILES and paste it above
+                 <div class="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)]">
+                     <span class="text-xs text-[var(--text-muted)]">Use Ketcher to draw, then automatically load SMILES</span>
+                     <button onclick="getSmilesFromKetcher()" class="text-xs font-semibold bg-[rgba(139,92,246,0.2)] text-[#a78bfa] border border-[#a78bfa]/30 px-3 py-1.5 rounded-lg hover:bg-[#a78bfa]/30 transition-colors">
+                         Load SMILES
+                     </button>
                  </div>
             </div>
         </div>
@@ -247,6 +250,31 @@
     </div>
 
     <script>
+        async function getSmilesFromKetcher() {
+            try {
+                const ketcherFrame = document.getElementById('ketcher-iframe');
+                const ketcher = ketcherFrame.contentWindow.ketcher;
+                if (!ketcher) {
+                    alert("Ketcher is not fully loaded yet.");
+                    return;
+                }
+                const smiles = await ketcher.getSmiles();
+                const inputArea = document.getElementById('smiles-input');
+
+                if (smiles) {
+                    // Append if there's already content, otherwise replace
+                    if (inputArea.value.trim().length > 0) {
+                        inputArea.value = inputArea.value.trim() + '\n' + smiles;
+                    } else {
+                        inputArea.value = smiles;
+                    }
+                }
+            } catch (err) {
+                console.error("Error getting SMILES from Ketcher", err);
+                alert("Failed to get SMILES from Ketcher.");
+            }
+        }
+
         async function runAnalysis() {
             const rawSmiles = document.getElementById('smiles-input').value;
             const smilesArray = rawSmiles.split('\n').map(s => s.trim()).filter(s => s.length > 0);
