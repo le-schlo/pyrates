@@ -1031,8 +1031,8 @@
                         <span style="word-break: break-all; font-family: ui-monospace, monospace; font-size: 0.85rem;" class="text-[var(--text-main)]">${row.smiles}</span>
                     </td>
                     <td>${cellVal(row._originalIdx, row, 'triplet_energy_adiabatic', 'Triplet energy (adiabatic)')}</td>
-                    <td>${cellVal(row._originalIdx, row, 'lamda_S_T', '(S†→T)')}</td>
-                    <td>${cellVal(row._originalIdx, row, 'lamda_T_S', '(T†→S)')}</td>
+                    <td>${cellVal(row._originalIdx, row, 'lamda_S_T', 'Reorganization Energy S→T')}</td>
+                    <td>${cellVal(row._originalIdx, row, 'lamda_T_S', 'Reorganization Energy T→S')}</td>
                 `;
                 tbody.appendChild(tr);
             });
