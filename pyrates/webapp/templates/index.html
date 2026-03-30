@@ -369,18 +369,23 @@
 
             <!-- Sketcher section -->
             <div class="glass-panel">
-                 <div class="panel-header">
-                     <svg class="w-5 h-5 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                     Sketcher
+                 <div class="panel-header justify-between cursor-pointer select-none" onclick="toggleKetcher()">
+                     <div class="flex items-center gap-2">
+                         <svg class="w-5 h-5 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                         Sketcher
+                     </div>
+                     <svg id="ketcher-toggle-icon" class="w-5 h-5 text-[var(--text-muted)] transition-transform duration-300 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                  </div>
-                 <div class="p-0">
-                     <iframe id="ketcher-iframe" src="/static/ketcher/index.html"></iframe>
-                 </div>
-                 <div class="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)]">
-                     <span class="text-xs text-[var(--text-muted)]">Use Ketcher to draw, then load SMILES</span>
-                     <button onclick="getSmilesFromKetcher()" class="text-xs font-semibold bg-[#8b5cf6] text-white border border-[#8b5cf6] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed] transition-colors">
-                         Load SMILES
-                     </button>
+                 <div id="ketcher-content" class="transition-all duration-300 overflow-hidden" style="max-height: 1000px; opacity: 1;">
+                     <div class="p-0">
+                         <iframe id="ketcher-iframe" src="/static/ketcher/index.html"></iframe>
+                     </div>
+                     <div class="flex items-center justify-between px-4 py-3 bg-[rgba(255,255,255,0.02)] border-t border-[var(--border-color)]">
+                         <span class="text-xs text-[var(--text-muted)]">Use Ketcher to draw, then load SMILES</span>
+                         <button onclick="getSmilesFromKetcher()" class="text-xs font-semibold bg-[#8b5cf6] text-white border border-[#8b5cf6] px-3 py-1.5 rounded-lg hover:bg-[#7c3aed] transition-colors">
+                             Load SMILES
+                         </button>
+                     </div>
                  </div>
             </div>
         </div>
@@ -426,6 +431,20 @@
 
         function convertEnergy(val, toUnit) {
             return (val * FACTORS_TO_KCAL["kcal/mol"]) / FACTORS_TO_KCAL[toUnit];
+        }
+
+        function toggleKetcher() {
+            const content = document.getElementById('ketcher-content');
+            const icon = document.getElementById('ketcher-toggle-icon');
+            if (content.style.maxHeight === '0px' || content.style.maxHeight === '') {
+                content.style.maxHeight = '1000px';
+                content.style.opacity = '1';
+                icon.classList.add('rotate-180');
+            } else {
+                content.style.maxHeight = '0px';
+                content.style.opacity = '0';
+                icon.classList.remove('rotate-180');
+            }
         }
 
         function clearInput() {
