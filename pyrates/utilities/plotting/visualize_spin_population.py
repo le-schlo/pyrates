@@ -130,11 +130,10 @@ def visualize_density_interactive(smiles, spin_population, uncertainty=None, rgb
             cmin=cmin, cmax=cmax, color=[cmin],
             showscale=True,
             colorbar=dict(
-                title=label, 
+                title=dict(text=label, font=dict(color="#f8fafc")),
                 thickness=15, 
                 len=0.75,
-                tickfont=dict(color="#94a3b8"),
-                titlefont=dict(color="#f8fafc")
+                tickfont=dict(color="#94a3b8")
             ),
         ),
         hoverinfo="skip", showlegend=False,
