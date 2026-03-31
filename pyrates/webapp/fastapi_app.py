@@ -12,7 +12,7 @@ import base64
 from fastapi.responses import Response
 
 # Note: assuming pyrates is in PYTHONPATH
-from pyrates.webapp.webapp.routes import predict
+from pyrates.webapp.science_utils.prediction import predict
 from pyrates.webapp.science_utils.smiles_utils import is_valid_smiles, canonicalize_smiles
 from pyrates.utilities.plotting.visualize_spin_population import visualize_density_interactive, visualize_density
 from pyrates.utilities.plotting.plot_modes import plot_mode_distribution_single

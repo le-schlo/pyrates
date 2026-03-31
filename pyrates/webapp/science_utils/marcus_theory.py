@@ -338,7 +338,7 @@ def plot_reaction_coordinate(
     }
 
     if render:
-        # We handle plotting in Streamlit side, no blocking `show()` inside the library function usually.
+        # We handle plotting in the webapp side, no blocking `show()` inside the library function usually.
         # Although if show -> plt.show()
         if show:
             plt.show()

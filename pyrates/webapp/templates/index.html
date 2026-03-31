@@ -229,6 +229,18 @@
         .sleek-table tr:hover td {
             background: var(--btn-ghost-bg);
         }
+        .sleek-table tr.expanded-row td {
+            background-color: rgba(99, 102, 241, 0.04) !important;
+            border-bottom-color: transparent !important;
+        }
+        .sleek-table tr.expanded-row:hover td {
+            background-color: rgba(99, 102, 241, 0.06) !important;
+        }
+        .sleek-table tr.expanded-details td {
+            background-color: rgba(99, 102, 241, 0.04) !important;
+            border-bottom: 2px solid rgba(99, 102, 241, 0.2) !important;
+            padding-top: 0;
+        }
 
         .loader-overlay {
             position: fixed;
@@ -773,13 +785,34 @@
         function openDetailedAnalysis(idx) {
             const row = window.appData[idx];
             if(!row) return;
-            const detailPanel = document.getElementById('detailed-analysis-panel');
-            detailPanel.className = 'mt-8 border-t border-[var(--border-color)] pt-8';
-            injectAnalysis(detailPanel, row);
-            detailPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+            const trMain = document.getElementById(`main-row-${idx}`);
+            const detailsRow = document.getElementById(`details-row-${idx}`);
+            const chevron = document.getElementById(`chevron-${idx}`);
+
+            if (detailsRow && trMain) {
+                if (detailsRow.classList.contains('hidden')) {
+                    detailsRow.classList.remove('hidden');
+                    trMain.classList.add('expanded-row');
+                    detailsRow.classList.add('expanded-details');
+                    if (chevron) chevron.classList.add('rotate-180', 'text-[#6366f1]');
+
+                    if (!detailsRow.hasAttribute('data-rendered')) {
+                        const cell = detailsRow.querySelector('td');
+                        injectAnalysis(cell, row, idx);
+                        detailsRow.setAttribute('data-rendered', 'true');
+                    }
+                } else {
+                    detailsRow.classList.add('hidden');
+                    trMain.classList.remove('expanded-row');
+                    detailsRow.classList.remove('expanded-details');
+                    if (chevron) chevron.classList.remove('rotate-180', 'text-[#6366f1]');
+                }
+            }
         }
 
-        async function injectAnalysis(containerEl, row) {
+        async function injectAnalysis(containerEl, row, idx) {
+            const uniqueId = idx !== undefined ? idx : 'default';
             containerEl.innerHTML = `
                 <div class="flex justify-center my-8">
                     <div class="spinner border-t-[#6366f1]"></div>
@@ -787,23 +820,23 @@
             `;
 
             const analysisGrid = `
-                <div>
-                   <div class="flex justify-between items-center mb-4 border-b border-[var(--border-color)] pb-2 flex-wrap gap-4">
-                       <h4 class="text-lg font-bold text-[var(--text-heading)] flex items-center gap-2">
-                           <svg class="w-5 h-5 text-[#0ea5e9]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"></path></svg>
-                           Spin Density Distribution
-                           <span class="font-mono text-sm ml-2 px-2 py-1 bg-[var(--btn-ghost-bg)] border border-[var(--border-color)] rounded">${row.smiles}</span>
-                       </h4>
+                <div class="px-8 pb-8 w-full">
+                   <div class="flex justify-between items-center mb-5 flex-wrap gap-4">
+                       <div class="flex items-center gap-3">
+                           <div>
+                               <h3 class="text-lg font-bold text-[var(--text-heading)]">Spin Density Distribution</h3>
+                           </div>
+                       </div>
                        <div class="flex items-center gap-3">
                            <span class="text-sm font-medium text-[var(--text-muted)]">Show Uncertainty</span>
                            <label class="toggle-switch">
-                               <input type="checkbox" id="toggle-unc-${row.smiles.replace(/\W/g,'_')}">
+                               <input type="checkbox" id="toggle-unc-${uniqueId}">
                                <span class="slider"></span>
                            </label>
                        </div>
                    </div>
-                   <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] border border-[var(--border-color)]">
-                       <div id="spin-plotly" class="w-full h-[500px] flex items-center justify-center">
+                   <div class="bg-[var(--bg-surface)] rounded-2xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.08)] border border-indigo-500/15 transition-all">
+                       <div id="spin-plotly-${uniqueId}" class="w-full h-[450px] flex items-center justify-center">
                            <div class="spinner border-t-[var(--ring-color)]"></div>
                        </div>
                    </div>
@@ -814,7 +847,8 @@
             // Load interactive spin density
             const currentTheme = document.body.getAttribute('data-theme') || 'light';
             const loadSpinPlot = async (showUnc) => {
-                const spDiv = document.getElementById('spin-plotly');
+                const spDiv = document.getElementById(`spin-plotly-${uniqueId}`);
+                if (!spDiv) return;
                 spDiv.innerHTML = '<div class="spinner border-t-[var(--ring-color)]"></div>';
                 try {
                     const r = await fetch('/api/plot/spin', {
@@ -839,7 +873,7 @@
             await loadSpinPlot(false);
 
             // Checkbox listener
-            const cbx = document.getElementById(`toggle-unc-${row.smiles.replace(/\W/g,'_')}`);
+            const cbx = document.getElementById(`toggle-unc-${uniqueId}`);
             if(cbx) {
                 cbx.addEventListener('change', (e) => {
                     loadSpinPlot(e.target.checked);
@@ -987,6 +1021,7 @@
                     <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('triplet_energy_adiabatic')">E<sub>T</sub> <span class="text-xs opacity-50">(${selectedUnit})</span> ${getSortIcon('triplet_energy_adiabatic')}</th>
                     <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('lamda_S_T')">λ<sub>S→T</sub> <span class="text-xs opacity-50">(${selectedUnit})</span> ${getSortIcon('lamda_S_T')}</th>
                     <th class="cursor-pointer hover:text-[#0ea5e9] transition-colors py-3" onclick="handleSort('lamda_T_S')">λ<sub>T→S</sub> <span class="text-xs opacity-50">(${selectedUnit})</span> ${getSortIcon('lamda_T_S')}</th>
+                    <th style="width: 48px;"></th>
                 </tr>
             `;
             table.appendChild(thead);
@@ -1026,6 +1061,7 @@
 
             sortedResults.forEach((row) => {
                 const tr = document.createElement('tr');
+                tr.id = `main-row-${row._originalIdx}`;
                 tr.className = "cursor-pointer hover:bg-[var(--btn-ghost-bg)] transition-colors";
                 tr.onclick = () => openDetailedAnalysis(row._originalIdx);
 
@@ -1033,7 +1069,7 @@
 
                 tr.innerHTML = `
                     <td class="p-2 w-[130px]">
-                        <div id="${structId}" class="w-[120px] h-[80px] flex items-center justify-center bg-[#ffffff] border border-[var(--border-color)] rounded shrink-0 overflow-hidden">
+                        <div id="${structId}" class="w-[120px] h-[80px] flex items-center justify-center bg-[#ffffff] border border-[var(--border-color)] rounded shrink-0 overflow-hidden shadow-sm transition-shadow">
                             <div class="spinner border-t-[#6366f1] w-4 h-4 border-2"></div>
                         </div>
                     </td>
@@ -1043,8 +1079,21 @@
                     <td>${cellVal(row._originalIdx, row, 'triplet_energy_adiabatic', 'Triplet energy (adiabatic)')}</td>
                     <td>${cellVal(row._originalIdx, row, 'lamda_S_T', 'Reorganization Energy (S→T)')}</td>
                     <td>${cellVal(row._originalIdx, row, 'lamda_T_S', 'Reorganization Energy (T→S)')}</td>
+                    <td class="pr-6 text-right">
+                        <svg id="chevron-${row._originalIdx}" class="w-5 h-5 text-[var(--text-muted)] inline-block transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </td>
                 `;
                 tbody.appendChild(tr);
+
+                const trDetail = document.createElement('tr');
+                trDetail.id = `details-row-${row._originalIdx}`;
+                trDetail.className = "hidden";
+                trDetail.innerHTML = `
+                    <td colspan="6" class="p-0 border-[var(--border-color)]">
+                        <!-- Content injected via injectAnalysis -->
+                    </td>
+                `;
+                tbody.appendChild(trDetail);
             });
             table.appendChild(tbody);
             container.appendChild(table);
@@ -1086,8 +1135,19 @@
 
             // If only one result, automatically display analysis directly below
             if(results.length === 1) {
-                detailPanel.className = 'mt-8 border-t border-[var(--border-color)] pt-8';
-                injectAnalysis(detailPanel, results[0]);
+                const trDetail = document.getElementById(`details-row-${results[0]._originalIdx}`);
+                const trMain = document.getElementById(`main-row-${results[0]._originalIdx}`);
+                const chevron = document.getElementById(`chevron-${results[0]._originalIdx}`);
+                if (trDetail && trMain) {
+                    trDetail.classList.remove('hidden');
+                    trMain.classList.add('expanded-row');
+                    trDetail.classList.add('expanded-details');
+                    if (chevron) chevron.classList.add('rotate-180', 'text-[#6366f1]');
+
+                    const cell = trDetail.querySelector('td');
+                    injectAnalysis(cell, results[0], results[0]._originalIdx);
+                    trDetail.setAttribute('data-rendered', 'true');
+                }
             }
 
             // Populate Quencher dropdown for Marcus Theory

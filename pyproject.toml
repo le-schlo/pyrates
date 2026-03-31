@@ -19,8 +19,6 @@ dependencies = [
     "torch-geometric==2.7.0",
     "optuna==4.7.0",
     "pytest==9.0.2",
-    "streamlit>=1.36",
-    "streamlit-ketcher",
     "cairosvg==2.9.0",
     "plotly==6.6.0"
 ]

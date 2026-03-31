@@ -1,11 +1,11 @@
 from __future__ import annotations
-
 from pathlib import Path
-from typing import Iterable, Dict
-import pandas as pd
+from typing import Iterable
 from pyrates.model.inference import get_predictions
 import importlib.resources as ir
+import pandas as pd
 import numpy as np
+
 
 def collect_results(smiles: list):
     """Collect prediction values"""
@@ -15,7 +15,6 @@ def collect_results(smiles: list):
     node_output = output['node']
 
     return graph_output, node_output
-
 
 def predict(smiles_list: Iterable[str]) -> pd.DataFrame:
     """Stub prediction function to be replaced by real ML models.
@@ -85,15 +84,3 @@ def predict(smiles_list: Iterable[str]) -> pd.DataFrame:
     df = pd.DataFrame(rows)
 
     return df
-
-
-def reset_results():
-    """Helper to clear session-state results."""
-    try:
-        import streamlit as st;
-
-        for k in ["smiles_list", "results_df", "last_run_ts"]:
-            if k in st.session_state:
-                del st.session_state[k]
-    except Exception:
-        pass
