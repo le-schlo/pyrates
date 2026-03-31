@@ -130,17 +130,33 @@ def api_plot_spin(request: PlotSpinRequest):
 
 class StructureRequest(BaseModel):
     smiles: str
+    name: str = ""
     theme: str = "light"
 
 @app.post("/api/structure")
 def api_structure(request: StructureRequest):
     try:
+        # Check for pre-drawn structure image if name is provided
+        if request.name:
+            import importlib.resources as ir
+            
+            # Since names contain underscores (e.g. Ir_ppy3), preserve alphanumeric, space, -, and _
+            safe_name = "".join(c for c in request.name if c.isalnum() or c in (" ", "-", "_")).strip()
+            if safe_name:
+                # Look in 'pc_structures' inside the packaged data directory
+                try:
+                    img_path = ir.files("pyrates.webapp.data").joinpath("pc_structures", f"{safe_name}.png")
+                    if img_path.is_file():
+                        return Response(content=img_path.read_bytes(), media_type="image/png")
+                except Exception:
+                    pass
+
         from rdkit import Chem
         from rdkit.Chem.Draw import rdMolDraw2D
         mol = Chem.MolFromSmiles(request.smiles)
         if mol is None:
             raise ValueError("Invalid SMILES")
-        
+
         # Consistent with load_acs_style but uses SVG for web view
         drawer = rdMolDraw2D.MolDraw2DSVG(200, 150)
         opts = drawer.drawOptions()
@@ -153,7 +169,7 @@ def api_structure(request: StructureRequest):
         opts.minFontSize = 20
         opts.maxFontSize = 30
         opts.padding = 0.05
-        
+
         drawer.DrawMolecule(mol)
         drawer.FinishDrawing()
         svg = drawer.GetDrawingText()
@@ -169,11 +185,13 @@ def api_photocatalysts():
     pcs = []
     for n in names:
         row = get_photocatalyst_row(n)
+        s = row.get("photocatalyst_smiles", "")
         pcs.append({
             "name": n,
             "E_T_adiabatic": float(row["E_T_adiabatic"]),
             "lamda_S_T": float(row["lamda_S_T"]),
             "lamda_T_S": float(row["lamda_T_S"]),
+            "smiles": str(s) if str(s).lower() != "nan" and s else ""
         })
     return {"photocatalysts": pcs}
 
