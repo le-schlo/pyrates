@@ -10,6 +10,10 @@ import io
 import json
 import base64
 from fastapi.responses import Response
+from contextlib import asynccontextmanager
+
+import matplotlib
+matplotlib.use('Agg')
 
 # Note: assuming pyrates is in PYTHONPATH
 from pyrates.webapp.science_utils.prediction import predict
@@ -21,7 +25,21 @@ from pyrates.webapp.science_utils import marcus_theory
 import matplotlib.pyplot as plt
 import numpy as np
 
-app = FastAPI(title="PyRates REST API")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # This safely pre-loads the model before accepting web traffic
+    print("Pre-warming PyTorch model into global cache...")
+    try:
+        from pyrates.webapp.science_utils.prediction import predict as warmup_predict
+        # Trigger cache loading via a single quick methane molecule
+        warmup_predict(["C"])
+        print("Model cached successfully!")
+    except Exception as e:
+        print(f"Could not pre-warm model: {e}")
+    yield
+    # Code here runs on app shutdown if necessary
+
+app = FastAPI(title="PyRates REST API", lifespan=lifespan)
 
 # Mount static files (like ketcher)
 import os
@@ -33,7 +51,7 @@ class PredictRequest(BaseModel):
     smiles: List[str]
 
 @app.post("/api/predict")
-async def api_predict(request: PredictRequest):
+def api_predict(request: PredictRequest):
     valid = []
     invalid = []
     for s in request.smiles:
@@ -70,7 +88,7 @@ class PlotModeRequest(BaseModel):
     theme: str = "light"
 
 @app.post("/api/plot/mode")
-async def api_plot_mode(request: PlotModeRequest):
+def api_plot_mode(request: PlotModeRequest):
     try:
         fig = plot_mode_distribution_single(
             mu=request.mu,
@@ -98,7 +116,7 @@ class PlotSpinRequest(BaseModel):
     theme: str = "light"
 
 @app.post("/api/plot/spin")
-async def api_plot_spin(request: PlotSpinRequest):
+def api_plot_spin(request: PlotSpinRequest):
     try:
         fig = visualize_density_interactive(
             request.smiles, 
@@ -115,7 +133,7 @@ class StructureRequest(BaseModel):
     theme: str = "light"
 
 @app.post("/api/structure")
-async def api_structure(request: StructureRequest):
+def api_structure(request: StructureRequest):
     try:
         from rdkit import Chem
         from rdkit.Chem.Draw import rdMolDraw2D
@@ -146,7 +164,7 @@ async def api_structure(request: StructureRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/api/photocatalysts")
-async def api_photocatalysts():
+def api_photocatalysts():
     names = list_photocatalyst_names()
     pcs = []
     for n in names:
@@ -170,7 +188,7 @@ class MarcusRequest(BaseModel):
     theme: str = "light"
 
 @app.post("/api/marcus/compute")
-async def api_marcus_compute(request: MarcusRequest):
+def api_marcus_compute(request: MarcusRequest):
     dG, dG_act_fwd, dG_act_bwd = marcus_theory.calculate_driving_force_and_barrier(
         pc_adiabatic_E_T=request.pc_adiabatic_E_T,
         pc_lambda_S_T=request.pc_lambda_S_T,
@@ -187,7 +205,7 @@ async def api_marcus_compute(request: MarcusRequest):
     }
 
 @app.post("/api/marcus/plot")
-async def api_marcus_plot(request: MarcusRequest):
+def api_marcus_plot(request: MarcusRequest):
     try:
         res = marcus_theory.plot_reaction_coordinate(
             pc_adiabatic_E_T=request.pc_adiabatic_E_T,
@@ -220,7 +238,7 @@ async def api_marcus_plot(request: MarcusRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/", response_class=HTMLResponse)
-async def index():
+def index():
     html_path = Path(__file__).parent / "templates" / "index.html"
     return html_path.read_text("utf8")
 
