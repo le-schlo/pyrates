@@ -22,6 +22,8 @@ dependencies = [
     "cairosvg==2.9.0",
     "plotly==6.6.0",
     "selfies==2.2.0",
+    "fastapi==0.135.2",
+    "uvicorn[standard]==0.42.0",
 ]
 
 [tool.setuptools.packages.find]
