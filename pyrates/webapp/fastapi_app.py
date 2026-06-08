@@ -17,7 +17,7 @@ matplotlib.use('Agg')
 
 # Note: assuming pyrates is in PYTHONPATH
 from pyrates.webapp.science_utils.prediction import predict
-from pyrates.webapp.science_utils.smiles_utils import is_valid_smiles, canonicalize_smiles
+from pyrates.webapp.science_utils.smiles_utils import is_valid_smiles, canonicalize_smiles, is_single_fragment_smiles
 from pyrates.utilities.plotting.visualize_spin_population import visualize_density_interactive, visualize_density
 from pyrates.utilities.plotting.plot_modes import plot_mode_distribution_single
 from pyrates.webapp.science_utils.photocatalysts import list_photocatalyst_names, get_photocatalyst_row
@@ -52,6 +52,10 @@ class PredictRequest(BaseModel):
 
 @app.post("/api/predict")
 def api_predict(request: PredictRequest):
+    limit=25
+    if len(request.smiles) > limit:
+        raise HTTPException(status_code=400, detail=f"A maximum of {limit} SMILES per request is allowed.")
+
     valid = []
     invalid = []
     for s in request.smiles:
@@ -61,6 +65,9 @@ def api_predict(request: PredictRequest):
         except Exception:
             pass
         if not is_val:
+            invalid.append(s)
+            continue
+        if not is_single_fragment_smiles(s):
             invalid.append(s)
             continue
         canon = canonicalize_smiles(s)
