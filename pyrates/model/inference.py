@@ -96,9 +96,10 @@ _global_model_cache = None
 
 def get_predictions(smiles: list,
                     model_path: Path = Path(
-                        '/tmp/pyrates/playground/model_setup/save_model_and_inspect/new_data/graph_gps/new_loss/checkpoints/model.pt'),
+                        '/tmp/pyRates/playground/model_setup/save_model_and_inspect/new_data/graph_gps/new_loss/checkpoints/model.pt'),
                     device='cpu',
                     task: str = 'graph', #other options are node or all
+                    mode: str = 'mixture_mean' #other option max_mode
                     ):
     '''
     Function to get predictions from a trained model.
@@ -167,7 +168,7 @@ def get_predictions(smiles: list,
     print("Getting predictions from ", model_path)
     print(
         f"Loaded model from epoch {checkpoint['epoch']} with val_loss {checkpoint['val_loss']:.4f} and GNN encoder type {checkpoint['model_config']['encoder_type']}")
-    prediction_result = predict(model, test_loader, device, scaler)
+    prediction_result = predict(model, test_loader, device, scaler, mode=mode)
     if task == 'all':
         return prediction_result
 

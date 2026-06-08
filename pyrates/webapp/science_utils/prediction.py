@@ -5,12 +5,15 @@ from pyrates.model.inference import get_predictions
 import importlib.resources as ir
 import pandas as pd
 import numpy as np
+import threading
 
+_model_lock = threading.Lock()
 
 def collect_results(smiles: list):
     """Collect prediction values"""
 
-    output = get_predictions(smiles, model_path=Path(str(ir.files("pyrates.webapp.data").joinpath("model.pt"))), device='cpu', task='all')
+    with _model_lock:
+        output = get_predictions(smiles, model_path=Path(str(ir.files("pyrates.webapp.data").joinpath("model.pt"))), device='cpu', task='all')
     graph_output = output['graph']
     node_output = output['node']
 

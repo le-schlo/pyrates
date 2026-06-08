@@ -1,11 +1,11 @@
 import numpy as np
 
-def marcus_symmetric(delta_g, lambda_acceptor_singlet, lambda_donor_triplet):
+def marcus_symmetric(delta_g, lambda_average):
     """
     Calculate the Delta G^# using the symmetric Marcus approach.
     """
-    numerator = (delta_g + lambda_acceptor_singlet + lambda_donor_triplet)**2
-    denominator = 4 * (lambda_acceptor_singlet + lambda_donor_triplet)
+    numerator = (delta_g + lambda_average)**2
+    denominator = 4 * (lambda_average)
 
     return numerator / denominator
 

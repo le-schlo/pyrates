@@ -516,7 +516,7 @@
                          <svg class="w-5 h-5 text-[#8b5cf6]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                          Sketcher
                      </div>
-                     <svg id="ketcher-toggle-icon" class="w-5 h-5 text-[var(--text-muted)] transition-transform duration-300 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                     <svg id="ketcher-toggle-icon" class="w-5 h-5 text-[var(--text-muted)] transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
                  </div>
                  <div id="ketcher-content" class="transition-all duration-300 overflow-hidden" style="max-height: 1000px; opacity: 1;">
                      <div class="p-0">
@@ -580,6 +580,54 @@
                     <div class="flex-1 min-w-[200px]">
                         <div class="flex items-center justify-between mb-2">
                             <label class="block text-sm font-medium text-[var(--text-muted)]">Photocatalyst</label>
+                            <div class="relative">
+                                <button id="pc-info-btn" class="text-[var(--text-muted)] hover:text-[#0ea5e9] p-1 rounded hover:bg-[var(--btn-ghost-hover)] transition-colors" onclick="togglePcInfo(event)" title="View Photocatalyst Properties">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                </button>
+                                <div id="pc-info-panel" class="hidden absolute right-0 mt-2 w-96 bg-[var(--bg-surface)] border border-[var(--border-color)] rounded-xl p-6 shadow-xl z-50">
+                                    <div class="grid grid-cols-2 gap-x-8 gap-y-6 text-center">
+                                        <div class="col-span-2 grid grid-cols-3 gap-4 pb-4 border-b border-[var(--border-color)]">
+                                            <div>
+                                                <div class="leading-tight mb-2 h-10 flex flex-col justify-end">
+                                                    <span class="font-bold text-lg text-[var(--text-heading)]"><i>E</i><sub>T</sub></span>
+                                                    <span class="pc-unit-label text-[var(--text-muted)] opacity-60 text-[10px]"></span>
+                                                </div>
+                                                <div id="pc-info-et" class="font-bold text-[var(--text-heading)] text-lg">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="leading-tight mb-2 h-10 flex flex-col justify-end">
+                                                    <span class="font-bold text-lg text-[var(--text-heading)]"><i>E</i><sub>red</sub><sup>*</sup></span>
+                                                    <span class="text-[var(--text-muted)] opacity-60 text-[10px]">(V)</span>
+                                                </div>
+                                                <div id="pc-info-ered" class="font-bold text-[var(--text-heading)] text-lg">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="leading-tight mb-2 h-10 flex flex-col justify-end">
+                                                    <span class="font-bold text-lg text-[var(--text-heading)]"><i>E</i><sub>ox</sub><sup>*</sup></span>
+                                                    <span class="text-[var(--text-muted)] opacity-60 text-[10px]">(V)</span>
+                                                </div>
+                                                <div id="pc-info-eox" class="font-bold text-[var(--text-heading)] text-lg">-</div>
+                                            </div>
+                                        </div>
+                                        <div class="grid grid-cols-2 col-span-2 gap-8 pt-2">
+                                            <div>
+                                                <div class="leading-tight mb-2 flex flex-col items-center">
+                                                    <span class="font-bold text-base text-[var(--text-heading)]"><i>λ</i><sub>S→T</sub></span>
+                                                    <span class="pc-unit-label text-[var(--text-muted)] opacity-60 text-[10px]"></span>
+                                                </div>
+                                                <div id="pc-info-lst" class="font-bold text-[var(--text-heading)] text-lg">-</div>
+                                            </div>
+                                            <div>
+                                                <div class="leading-tight mb-2 flex flex-col items-center">
+                                                    <span class="font-bold text-base text-[var(--text-heading)]"><i>λ</i><sub>T→S</sub></span>
+                                                    <span class="pc-unit-label text-[var(--text-muted)] opacity-60 text-[10px]"></span>
+                                                </div>
+                                                <div id="pc-info-lts" class="font-bold text-[var(--text-heading)] text-lg">-</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div id="marcus-pc-struct" class="mb-3 w-full h-[150px] flex items-center justify-center bg-[#ffffff] border border-[var(--border-color)] rounded overflow-hidden shadow-sm"></div>
                         <select id="pc-select" class="input-sleek py-2" onchange="runMarcusAnalysis()"></select>
@@ -600,8 +648,17 @@
                 </div>
 
                 <div class="bg-[var(--bg-surface)] rounded-xl overflow-hidden shadow-[0_0_20px_rgba(0,0,0,0.1)] border border-[var(--border-color)]">
-                    <div id="marcus-plot-container" class="w-full min-h-[400px] flex items-center justify-center">
-                        <p class="text-sm text-[var(--text-muted)]">Plot will appear here</p>
+                    <div class="panel-header justify-between cursor-pointer select-none" onclick="toggleMarcusPlot()">
+                        <div class="flex items-center gap-2 text-sm font-medium">
+                            <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                            View Marcus Plot
+                        </div>
+                        <svg id="marcus-plot-toggle-icon" class="w-5 h-5 text-[var(--text-muted)] transition-transform duration-300 transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                    <div id="marcus-plot-wrapper" class="transition-all duration-300 overflow-hidden" style="max-height: 0px; opacity: 0;">
+                        <div id="marcus-plot-container" class="w-full min-h-[400px] flex items-center justify-center border-t border-[var(--border-color)] p-4">
+                            <p class="text-sm text-[var(--text-muted)]">Plot will appear here</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -692,6 +749,20 @@
             } else {
                 content.style.maxHeight = '0px';
                 content.style.opacity = '0';
+                icon.classList.remove('rotate-180');
+            }
+        }
+
+        function toggleMarcusPlot() {
+            const wrapper = document.getElementById('marcus-plot-wrapper');
+            const icon = document.getElementById('marcus-plot-toggle-icon');
+            if (wrapper.style.maxHeight === '0px' || wrapper.style.maxHeight === '') {
+                wrapper.style.maxHeight = '1000px';
+                wrapper.style.opacity = '1';
+                icon.classList.add('rotate-180');
+            } else {
+                wrapper.style.maxHeight = '0px';
+                wrapper.style.opacity = '0';
                 icon.classList.remove('rotate-180');
             }
         }
@@ -1207,6 +1278,53 @@
             handleSectionClick('marcus');
         }
 
+        function togglePcInfo(e) {
+            e.stopPropagation();
+            const panel = document.getElementById('pc-info-panel');
+            if(panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                updatePcInfoDisplay();
+
+                const closeHandler = (event) => {
+                    if (!panel.contains(event.target) && !document.getElementById('pc-info-btn').contains(event.target)) {
+                        panel.classList.add('hidden');
+                        document.removeEventListener('click', closeHandler);
+                        panel._closeHandler = null;
+                    }
+                };
+                panel._closeHandler = closeHandler;
+                setTimeout(() => document.addEventListener('click', closeHandler), 0);
+            } else {
+                panel.classList.add('hidden');
+                if (panel._closeHandler) {
+                    document.removeEventListener('click', panel._closeHandler);
+                    panel._closeHandler = null;
+                }
+            }
+        }
+
+        function updatePcInfoDisplay() {
+            const pcIdx = document.getElementById('pc-select').value;
+            if(!pcIdx || !window.pcData || !window.pcData[pcIdx]) return;
+
+            const pcVal = window.pcData[pcIdx];
+            const unit = document.getElementById('unit-select').value;
+
+            // Update all unit labels in the panel
+            document.querySelectorAll('.pc-unit-label').forEach(el => {
+                el.innerText = `(${unit})`;
+            });
+
+            // Convert and update energy values
+            document.getElementById('pc-info-et').innerText = convertEnergy(pcVal.E_T_adiabatic, unit).toFixed(2);
+            document.getElementById('pc-info-lst').innerText = convertEnergy(pcVal.lamda_S_T, unit).toFixed(2);
+            document.getElementById('pc-info-lts').innerText = convertEnergy(pcVal.lamda_T_S, unit).toFixed(2);
+
+            // Redox potentials remain in Volts
+            document.getElementById('pc-info-ered').innerText = pcVal.E_red !== null && pcVal.E_red !== undefined ? parseFloat(pcVal.E_red).toFixed(2) : "N/A";
+            document.getElementById('pc-info-eox').innerText = pcVal.E_ox !== null && pcVal.E_ox !== undefined ? parseFloat(pcVal.E_ox).toFixed(2) : "N/A";
+        }
+
         function closeMarcusTheory(e) {
             e.stopPropagation();
             handleSectionClick('results');
@@ -1221,12 +1339,17 @@
             const qVal = window.appData[qIdx];
             const pcVal = window.pcData[pcIdx];
 
+
             // Render chosen structures
             const pcStructEl = document.getElementById('marcus-pc-struct');
             const qStructEl = document.getElementById('marcus-quencher-struct');
 
             pcStructEl.innerHTML = '<div class="spinner border-t-[#6366f1] w-4 h-4 border-2"></div>';
             fetchStructure(pcVal.smiles || "", 'marcus-pc-struct', pcVal.name);
+
+            if (!document.getElementById('pc-info-panel').classList.contains('hidden')) {
+                updatePcInfoDisplay();
+            }
 
             if(qVal.smiles) {
                 qStructEl.innerHTML = '<div class="spinner border-t-[#6366f1] w-4 h-4 border-2"></div>';
@@ -1308,6 +1431,9 @@
             const container = document.getElementById('main-container');
             if (container.classList.contains('has-marcus')) {
                 runMarcusAnalysis();
+            }
+            if (!document.getElementById('pc-info-panel').classList.contains('hidden')) {
+                updatePcInfoDisplay();
             }
         });
 

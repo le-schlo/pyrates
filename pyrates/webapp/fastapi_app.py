@@ -186,11 +186,20 @@ def api_photocatalysts():
     for n in names:
         row = get_photocatalyst_row(n)
         s = row.get("photocatalyst_smiles", "")
+        
+        # handle missing values for E_red / E_ox safely
+        e_red = row.get("E_red")
+        e_ox = row.get("E_ox")
+        e_red_val = float(e_red) if not pd.isna(e_red) else None
+        e_ox_val = float(e_ox) if not pd.isna(e_ox) else None
+
         pcs.append({
             "name": n,
             "E_T_adiabatic": float(row["E_T_adiabatic"]),
             "lamda_S_T": float(row["lamda_S_T"]),
             "lamda_T_S": float(row["lamda_T_S"]),
+            "E_red": e_red_val,
+            "E_ox": e_ox_val,
             "smiles": str(s) if str(s).lower() != "nan" and s else ""
         })
     return {"photocatalysts": pcs}
