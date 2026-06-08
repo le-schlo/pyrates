@@ -26,3 +26,11 @@ dependencies = [
 
 [tool.setuptools.packages.find]
 include = ["pyrates*"]
+
+
+[tool.setuptools.package-data]
+"pyrates.webapp" = [
+    "data/pc_structures/*.png",
+    "templates/*.html",
+    "static/**/*",
+]
