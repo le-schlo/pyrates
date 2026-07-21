@@ -50,6 +50,10 @@ if static_dir.exists():
 class PredictRequest(BaseModel):
     smiles: List[str]
 
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 @app.post("/api/predict")
 def api_predict(request: PredictRequest):
     limit=25
