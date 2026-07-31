@@ -10,7 +10,7 @@ Framework for predicting properties of excited states.
 
 ### Requirements
 - Linux
-- Python >= 3.12
+- Python == 3.12
 - [uv](https://github.com/astral-sh/uv)
 - [CUDA Toolkit](https://developer.nvidia.com/cuda-toolkit) (optional, for GPU support)
 
