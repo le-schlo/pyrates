@@ -1,4 +1,4 @@
-# pyrates
+# pyRates
 
 Framework for predicting properties of excited states.
 
