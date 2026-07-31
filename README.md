@@ -67,8 +67,8 @@ The model outputs parameters for a Gaussian Mixture Model (means, standard devia
 
 ### Multi-Task Learning and Task Weighting
 The model supports both graph-level and node-level predictions simultaneously:
-- **Graph-level tasks**: Predict molecular properties (e.g., energy, dipole moment).
-- **Node-level tasks**: Predict atom-specific properties (e.g., partial charges, spin populations).
+- **Graph-level tasks**: Predict molecular properties (e.g., adiabatic triplet energy).
+- **Node-level tasks**: Predict atom-specific properties (e.g., spin populations).
 - **Task weighting**: When both task types are active, losses can be weighted using the `weight_graph_loss` parameter (range: 0-1). The node loss weight is automatically set as `1 - weight_graph_loss`, allowing flexible control over multi-task learning balance.
 
 ### Loss Function Strategies
