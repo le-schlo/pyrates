@@ -5,19 +5,20 @@ def test_marcus_symmetric_basic():
     dG = 0.0
     lambda_acc = 1.0
     lambda_don = 1.0
-    # Expected: (0 + 1 + 1)^2 / (4 * (1+1)) = 4 / 8 = 0.5
+    lambda_average = (lambda_acc + lambda_don) /2
+
     expected = 0.5
-    result = marcus_symmetric(dG, lambda_acc, lambda_don)
+    result = marcus_symmetric(dG, lambda_average)
     assert np.isclose(result, expected)
 
 def test_marcus_symmetric_vectorized():
     dG = np.array([0.0, 0.0])
-    lambda_acc = np.array([1.0, 2.0])
-    lambda_don = np.array([1.0, 2.0])
-    # Case 1: 0.5
-    # Case 2: (0 + 2 + 2)^2 / (4 * (2+2)) = 16 / 16 = 1.0
-    expected = np.array([0.5, 1.0])
-    result = marcus_symmetric(dG, lambda_acc, lambda_don)
+    lambda_average = np.array([1.0, 2.0])
+
+    expected = np.array([0.25, 0.5])
+
+    result = marcus_symmetric(dG, lambda_average)
+
     assert np.allclose(result, expected)
 
 def test_marcus_asymmetric_basic():
